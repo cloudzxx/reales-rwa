@@ -100,6 +100,20 @@ describe("RWAToken", function () {
         token.connect(addr1).transfer(addr2.address, 100)
       ).to.be.revertedWith("Recipient is frozen");
     });
+
+    it("should reject transfer from non-whitelisted sender", async function () {
+      await token.removeFromWhitelist(addr1.address);
+      await expect(
+        token.connect(addr1).transfer(addr2.address, hre.ethers.parseEther("100"))
+      ).to.be.revertedWith("Sender not whitelisted");
+    });
+
+    it("should reject transfer to non-whitelisted recipient", async function () {
+      await token.removeFromWhitelist(addr2.address);
+      await expect(
+        token.connect(addr1).transfer(addr2.address, hre.ethers.parseEther("100"))
+      ).to.be.revertedWith("Recipient not whitelisted");
+    });
   });
 
   describe("Whitelist management", function () {
@@ -118,6 +132,13 @@ describe("RWAToken", function () {
       await expect(token.addToWhitelist(addr1.address))
         .to.emit(token, "WhitelistUpdated")
         .withArgs(addr1.address, true);
+    });
+
+    it("should emit WhitelistUpdated event on remove", async function () {
+      await token.addToWhitelist(addr1.address);
+      await expect(token.removeFromWhitelist(addr1.address))
+        .to.emit(token, "WhitelistUpdated")
+        .withArgs(addr1.address, false);
     });
   });
 
@@ -138,6 +159,13 @@ describe("RWAToken", function () {
         .to.emit(token, "FrozenStatusUpdated")
         .withArgs(addr1.address, true);
     });
+
+    it("should emit FrozenStatusUpdated event on unfreeze", async function () {
+      await token.freeze(addr1.address);
+      await expect(token.unfreeze(addr1.address))
+        .to.emit(token, "FrozenStatusUpdated")
+        .withArgs(addr1.address, false);
+    });
   });
 
   describe("Max supply", function () {
@@ -145,6 +173,12 @@ describe("RWAToken", function () {
       await token.setMaxSupply(hre.ethers.parseEther("2000000"));
       const info = await token.getAssetInfo();
       expect(info[3]).to.equal(hre.ethers.parseEther("2000000"));
+    });
+
+    it("should emit MaxSupplyUpdated event", async function () {
+      await expect(token.setMaxSupply(hre.ethers.parseEther("2000000")))
+        .to.emit(token, "MaxSupplyUpdated")
+        .withArgs(hre.ethers.parseEther("1000000"), hre.ethers.parseEther("2000000"));
     });
 
     it("should reject max supply below current supply", async function () {
