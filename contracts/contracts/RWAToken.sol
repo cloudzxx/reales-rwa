@@ -28,6 +28,7 @@ contract RWAToken is ERC20, Ownable {
         assetName = _assetName;
         issuer = _issuer;
         assetType = _assetType;
+        require(_maxSupply > 0, "Max supply must be > 0");
         maxSupply = _maxSupply;
         whitelist[msg.sender] = true;
     }
@@ -59,10 +60,15 @@ contract RWAToken is ERC20, Ownable {
         emit FrozenStatusUpdated(account, false);
     }
 
+    function renounceOwnership() public override onlyOwner {
+        revert("Cannot renounce ownership");
+    }
+
     function setMaxSupply(uint256 _maxSupply) external onlyOwner {
         require(_maxSupply >= totalSupply(), "New max below current supply");
-        emit MaxSupplyUpdated(maxSupply, _maxSupply);
+        uint256 oldSupply = maxSupply;
         maxSupply = _maxSupply;
+        emit MaxSupplyUpdated(oldSupply, _maxSupply);
     }
 
     function getAssetInfo()
