@@ -49,29 +49,37 @@ class ComplianceAgent:
         self.llm = None
         api_key = os.getenv("OPENAI_API_KEY")
         if api_key and api_key != "":
-            self.llm = ChatOpenAI(model="gpt-4o-mini", api_key=api_key)
+            self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, api_key=api_key)
 
     async def analyze(self, address: str, contract_address: str) -> dict:
         address = self.w3.to_checksum_address(address)
         contract_address = self.w3.to_checksum_address(contract_address)
 
-        topic = self.w3.keccak(text="Transfer(address,address,uint256)")
+        topic = TRANSFER_EVENT_SIGNATURE
         from_topic_padded = "0x" + address[2:].lower().rjust(64, "0")
         to_topic_padded = "0x" + address[2:].lower().rjust(64, "0")
 
-        from_logs = self.w3.eth.get_logs({
-            "address": contract_address,
-            "fromBlock": 0,
-            "toBlock": "latest",
-            "topics": [topic, from_topic_padded],
-        })
+        try:
+            from_logs = self.w3.eth.get_logs({
+                "address": contract_address,
+                "fromBlock": 0,
+                "toBlock": "latest",
+                "topics": [topic, from_topic_padded],
+            })
 
-        to_logs = self.w3.eth.get_logs({
-            "address": contract_address,
-            "fromBlock": 0,
-            "toBlock": "latest",
-            "topics": [topic, None, to_topic_padded],
-        })
+            to_logs = self.w3.eth.get_logs({
+                "address": contract_address,
+                "fromBlock": 0,
+                "toBlock": "latest",
+                "topics": [topic, None, to_topic_padded],
+            })
+        except Exception as e:
+            return {
+                "risk_score": 50,
+                "behavior_profile": "RPC query failed",
+                "unusual_tx": [],
+                "summary": f"Failed to fetch on-chain data: {str(e)}",
+            }
 
         all_logs = from_logs + to_logs
 
