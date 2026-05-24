@@ -1,8 +1,7 @@
 FROM node:22-alpine
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@latest --activate
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --no-frozen-lockfile
+COPY package.json ./
+RUN npm install
 COPY . .
 RUN mkdir -p lib
 COPY entrypoint.sh /entrypoint.sh
