@@ -24,7 +24,7 @@ async function main() {
     "../artifacts/contracts/RWAToken.sol/RWAToken.json"
   );
 
-  const libDir = path.join(__dirname, "../../frontend/lib");
+  const libDir = process.env.OUTPUT_DIR || path.join(__dirname, "../../frontend/lib");
   if (!fs.existsSync(libDir)) {
     fs.mkdirSync(libDir, { recursive: true });
   }
@@ -39,7 +39,7 @@ async function main() {
     `export const CONTRACT_ABI = ${JSON.stringify(artifact.abi, null, 2)};\n`
   );
 
-  console.log("Deployment info written to frontend/lib/");
+  console.log(`Deployment info written to ${libDir}/`);
 }
 
 main().catch((error) => {

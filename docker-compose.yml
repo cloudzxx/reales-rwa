@@ -1,0 +1,54 @@
+services:
+  hardhat:
+    build:
+      context: ./contracts
+      dockerfile: Dockerfile
+    ports:
+      - "8545:8545"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8545", "-d", '{"method":"eth_blockNumber","params":[],"id":1,"jsonrpc":"2.0"}']
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  deploy:
+    build:
+      context: ./contracts
+      dockerfile: Dockerfile.deploy
+    depends_on:
+      hardhat:
+        condition: service_healthy
+    environment:
+      - OUTPUT_DIR=/output
+    volumes:
+      - generated:/output
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      deploy:
+        condition: service_completed_successfully
+    volumes:
+      - generated:/generated:ro
+    environment:
+      - OWNER_PRIVATE_KEY=${OWNER_PRIVATE_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
+      - AI_AGENT_URL=http://ai-agent:8000
+
+  ai-agent:
+    build:
+      context: ./ai-agent
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - hardhat
+    environment:
+      - RPC_URL=http://hardhat:8545
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+
+volumes:
+  generated:
