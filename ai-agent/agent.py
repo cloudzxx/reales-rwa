@@ -47,9 +47,14 @@ class ComplianceAgent:
     def __init__(self, rpc_url: str = "http://127.0.0.1:8545"):
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
         self.llm = None
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.getenv("DEEPSEEK_API_KEY")
         if api_key and api_key != "":
-            self.llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, api_key=api_key)
+            self.llm = ChatOpenAI(
+                model="deepseek-chat",
+                temperature=0.0,
+                api_key=api_key,
+                base_url="https://api.deepseek.com",
+            )
 
     async def analyze(self, address: str, contract_address: str) -> dict:
         address = self.w3.to_checksum_address(address)
