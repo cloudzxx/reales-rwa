@@ -1,0 +1,13 @@
+[toolchain]
+anchor_version = "0.30.1"
+solana_version = "2.0.0"
+
+[programs.localnet]
+reales_rwa_solana = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+
+[provider]
+cluster = "Localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "ts-mocha -p ./tsconfig.json tests/**/*.ts --timeout 60000"

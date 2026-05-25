@@ -12,6 +12,19 @@ services:
       retries: 30
       start_period: 5s
 
+  solana-validator:
+    image: solanalabs/solana:stable
+    ports:
+      - "8899:8899"
+      - "8900:8900"
+    command: solana-test-validator --reset --quiet
+    healthcheck:
+      test: ["CMD-SHELL", "solana cluster-version"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+
   deploy:
     build:
       context: ./contracts
@@ -40,6 +53,7 @@ services:
       - OWNER_PRIVATE_KEY=${OWNER_PRIVATE_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
       - AI_AGENT_URL=http://ai-agent:8000
       - RPC_URL=http://hardhat:8545
+      - SOLANA_RPC_URL=http://solana-validator:8899
 
   ai-agent:
     build:
@@ -49,8 +63,10 @@ services:
       - "8000:8000"
     depends_on:
       - hardhat
+      - solana-validator
     environment:
       - RPC_URL=http://hardhat:8545
+      - SOLANA_RPC_URL=http://solana-validator:8899
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
 
 volumes:

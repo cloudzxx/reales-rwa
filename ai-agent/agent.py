@@ -1,5 +1,6 @@
 import os
 import json
+import requests
 from web3 import Web3
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -44,8 +45,9 @@ Sample transactions (up to 10):
 
 
 class ComplianceAgent:
-    def __init__(self, rpc_url: str = "http://127.0.0.1:8545"):
+    def __init__(self, rpc_url: str = "http://127.0.0.1:8545", solana_rpc_url: str = "http://127.0.0.1:8899"):
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
+        self.solana_rpc_url = solana_rpc_url
         self.llm = None
         api_key = os.getenv("DEEPSEEK_API_KEY")
         if api_key and api_key != "":
@@ -154,6 +156,89 @@ class ComplianceAgent:
                 return self._fallback_analysis(address, stats, txs)
         else:
             return self._fallback_analysis(address, stats, txs)
+
+    def _solana_rpc_call(self, method: str, params: list) -> dict:
+        """调用 Solana JSON-RPC"""
+        resp = requests.post(
+            self.solana_rpc_url,
+            json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
+            timeout=10,
+        )
+        return resp.json()
+
+    async def analyze_solana(self, address: str) -> dict:
+        """分析 Solana 地址的 SPL Token 交易行为"""
+        try:
+            # 获取该地址最近的交易签名
+            sigs_resp = self._solana_rpc_call("getSignaturesForAddress", [
+                address, {"limit": 20}
+            ])
+            sigs = sigs_resp.get("result", []) if "result" in sigs_resp else []
+
+            if not sigs:
+                return self._build_empty_response(address)
+
+            tx_count = len(sigs)
+            counterparties = set()
+
+            # 解析每笔交易的参与者
+            for sig_info in sigs:
+                tx_resp = self._solana_rpc_call("getTransaction", [
+                    sig_info["signature"],
+                    {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0},
+                ])
+                tx = tx_resp.get("result")
+                if tx:
+                    accounts = tx.get("transaction", {}).get("message", {}).get("accountKeys", [])
+                    for acc in accounts:
+                        addr = acc.get("pubkey", "")
+                        if addr.lower() != address.lower():
+                            counterparties.add(addr)
+
+            stats = {
+                "tx_count": tx_count,
+                "counterparties": len(counterparties),
+                "first_block": sigs[-1].get("slot", 0) if sigs else 0,
+                "last_block": sigs[0].get("slot", 0) if sigs else 0,
+            }
+
+            if self.llm:
+                chain = ANALYSIS_PROMPT | self.llm | StrOutputParser()
+                result = await chain.ainvoke({
+                    "address": address,
+                    "tx_count": stats["tx_count"],
+                    "counterparties": stats["counterparties"],
+                    "total_volume": "N/A (Solana)",
+                    "max_tx_value": "N/A (Solana)",
+                    "first_block": stats["first_block"],
+                    "last_block": stats["last_block"],
+                    "sample_txs": "\n".join(s["signature"] for s in sigs[:10]),
+                })
+                try:
+                    parsed = json.loads(result)
+                    return {
+                        "risk_score": int(parsed.get("risk_score", 30)),
+                        "behavior_profile": parsed.get("behavior_profile", "Unknown"),
+                        "unusual_tx": parsed.get("unusual_tx", []),
+                        "summary": parsed.get("summary", "No summary available."),
+                    }
+                except (json.JSONDecodeError, ValueError):
+                    pass
+
+            return {
+                "risk_score": min(100, tx_count * 3),
+                "behavior_profile": "Solana active user" if tx_count > 5 else "Solana low activity user",
+                "unusual_tx": [],
+                "summary": f"Solana address {address[:10]}... has {tx_count} recent transactions across {stats['counterparties']} counterparties.",
+            }
+
+        except Exception as e:
+            return {
+                "risk_score": 50,
+                "behavior_profile": "Solana RPC query failed",
+                "unusual_tx": [],
+                "summary": f"Failed to fetch Solana data: {str(e)}",
+            }
 
     def _fallback_analysis(self, address: str, stats: dict, txs: list) -> dict:
         risk = min(100, max(5, stats["tx_count"] * 5 + stats["counterparties"] * 3))
