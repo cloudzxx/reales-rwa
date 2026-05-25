@@ -20,6 +20,12 @@ export default function IssuePage() {
   const [checking, setChecking] = useState(true);
   const [contractOwner, setContractOwner] = useState("");
 
+  // whitelist & freeze
+  const [wlAddr, setWlAddr] = useState("");
+  const [freezeAddr, setFreezeAddr] = useState("");
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [adminResult, setAdminResult] = useState<string | null>(null);
+
   useEffect(() => {
     async function checkOwner() {
       try {
@@ -56,6 +62,44 @@ export default function IssuePage() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleWhitelist(action: "add" | "remove") {
+    setAdminLoading(true);
+    setAdminResult(null);
+    try {
+      const res = await fetch("/api/token/whitelist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: wlAddr, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setAdminResult(`Whitelist ${action}: ${data.txHash.slice(0, 14)}...`);
+    } catch (err: any) {
+      setAdminResult("Error: " + err.message);
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
+  async function handleFreeze(action: "freeze" | "unfreeze") {
+    setAdminLoading(true);
+    setAdminResult(null);
+    try {
+      const res = await fetch("/api/token/freeze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: freezeAddr, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setAdminResult(`Freeze ${action}: ${data.txHash.slice(0, 14)}...`);
+    } catch (err: any) {
+      setAdminResult("Error: " + err.message);
+    } finally {
+      setAdminLoading(false);
     }
   }
 
@@ -153,6 +197,38 @@ export default function IssuePage() {
           <p className="text-lg font-semibold">{t("issue.success")}</p>
           <p className="text-base font-mono break-all text-green-600">{t("issue.tx")}: {result.txHash}</p>
           <p className="text-base text-green-600">{t("issue.block")} #{result.blockNumber}</p>
+        </div>
+      )}
+
+      <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Whitelist</h2>
+          <p className="text-sm text-gray-400 mb-4">Add or remove an address from the whitelist</p>
+          <div className="space-y-3">
+            <input type="text" value={wlAddr} onChange={e => setWlAddr(e.target.value)} placeholder="0x..." className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition font-mono" />
+            <div className="flex gap-2">
+              <button onClick={() => handleWhitelist("add")} disabled={adminLoading || !wlAddr} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Add</button>
+              <button onClick={() => handleWhitelist("remove")} disabled={adminLoading || !wlAddr} className="flex-1 bg-red-500 hover:bg-red-400 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Freeze</h2>
+          <p className="text-sm text-gray-400 mb-4">Freeze or unfreeze an address</p>
+          <div className="space-y-3">
+            <input type="text" value={freezeAddr} onChange={e => setFreezeAddr(e.target.value)} placeholder="0x..." className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition font-mono" />
+            <div className="flex gap-2">
+              <button onClick={() => handleFreeze("freeze")} disabled={adminLoading || !freezeAddr} className="flex-1 bg-red-500 hover:bg-red-400 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Freeze</button>
+              <button onClick={() => handleFreeze("unfreeze")} disabled={adminLoading || !freezeAddr} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Unfreeze</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {adminResult && (
+        <div className={`mt-5 rounded-2xl p-5 text-lg border ${adminResult.startsWith("Error") ? "bg-red-50 border-red-200 text-red-600" : "bg-emerald-50 border-emerald-200 text-emerald-700"}`}>
+          {adminResult}
         </div>
       )}
     </div>
