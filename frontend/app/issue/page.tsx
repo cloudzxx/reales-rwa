@@ -57,89 +57,79 @@ export default function IssuePage() {
 
   if (!isConnected) {
     return (
-      <div className="py-20 text-center">
-        <p className="text-gray-500">Connect your wallet to issue tokens.</p>
+      <div className="py-24 text-center">
+        <p className="text-white/40">Connect your wallet to issue tokens.</p>
       </div>
     );
   }
 
   if (checking) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      <div className="flex items-center justify-center py-24">
+        <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
       </div>
     );
   }
 
   if (!isOwner) {
     return (
-      <div className="py-20 text-center">
-        <p className="text-red-500">
-          Only the contract owner can issue tokens. Your address: {address}
-        </p>
+      <div className="py-24 text-center">
+        <p className="text-red-400/80">Only the contract owner can issue tokens.</p>
+        <p className="text-xs text-white/30 mt-2 font-mono">{address}</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <h1 className="text-xl font-semibold text-gray-900 mb-6">Issue Tokens</h1>
+    <div className="max-w-lg mx-auto">
+      <div className="mb-8">
+        <h1 className="text-xl font-semibold text-white">Issue Tokens</h1>
+        <p className="text-sm text-white/40 mt-1">Mint new RWA tokens to a whitelisted address</p>
+      </div>
 
-      <form
-        onSubmit={handleIssue}
-        className="bg-white border border-gray-200/80 rounded-xl p-6 max-w-lg space-y-5 shadow-sm"
-      >
+      <form onSubmit={handleIssue} className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-6 space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Recipient Address
-          </label>
+          <label className="block text-sm font-medium text-white/60 mb-2">Recipient Address</label>
           <input
             type="text"
             value={to}
             onChange={(e) => setTo(e.target.value)}
             placeholder="0x..."
             required
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+            className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition font-mono text-sm"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Amount (REST)
-          </label>
+          <label className="block text-sm font-medium text-white/60 mb-2">Amount (REST)</label>
           <input
             type="text"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="100"
             required
-            className="w-full bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+            className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium rounded-lg px-4 py-2.5 transition"
+          className="w-full bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 disabled:from-white/[0.08] disabled:to-white/[0.08] disabled:text-white/20 text-white font-medium rounded-xl px-4 py-2.5 transition-all"
         >
           {loading ? "Issuing..." : "Issue Tokens"}
         </button>
       </form>
 
       {error && (
-        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4 text-red-600">
-          {error}
-        </div>
+        <div className="mt-4 bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-red-400 text-sm">{error}</div>
       )}
 
       {result && (
-        <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4 text-green-700 space-y-1">
-          <p className="font-semibold">Tokens issued successfully!</p>
-          <p className="text-sm">
-            TX:{" "}
-            <code className="text-xs break-all">{result.txHash}</code>
-          </p>
-          <p className="text-sm">Block: {result.blockNumber}</p>
+        <div className="mt-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-emerald-400 space-y-2">
+          <p className="font-medium">Tokens issued successfully</p>
+          <p className="text-xs font-mono break-all text-emerald-400/70">TX: {result.txHash}</p>
+          <p className="text-xs text-emerald-400/70">Block #{result.blockNumber}</p>
         </div>
       )}
     </div>
