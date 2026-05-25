@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/lib/i18n/context";
 
 interface ComplianceReport {
   risk_score: number;
@@ -22,6 +23,7 @@ function getScoreBg(score: number): string {
 }
 
 export default function CompliancePage() {
+  const { t } = useI18n();
   const [addr, setAddr] = useState("");
   const [report, setReport] = useState<ComplianceReport | null>(null);
   const [loading, setLoading] = useState(false);
@@ -53,8 +55,8 @@ export default function CompliancePage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">AI Compliance Analysis</h1>
-        <p className="text-lg text-gray-500 mt-1">On-chain behavior analysis with AI-powered risk scoring</p>
+        <h1 className="text-3xl font-bold text-gray-900">{t("compliance.title")}</h1>
+        <p className="text-lg text-gray-500 mt-1">{t("compliance.subtitle")}</p>
       </div>
 
       <form onSubmit={handleAnalyze} className="flex gap-3 mb-6 max-w-2xl">
@@ -62,7 +64,7 @@ export default function CompliancePage() {
           type="text"
           value={addr}
           onChange={(e) => setAddr(e.target.value)}
-          placeholder="Enter wallet address to analyze"
+          placeholder={t("compliance.placeholder")}
           className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition font-mono"
         />
         <button
@@ -70,7 +72,7 @@ export default function CompliancePage() {
           disabled={loading}
           className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 disabled:bg-gray-300 disabled:from-gray-300 disabled:to-gray-300 text-white font-semibold rounded-xl px-8 py-3 text-lg transition-all"
         >
-          {loading ? "Analyzing..." : "Analyze"}
+          {loading ? t("compliance.analyzing") : t("compliance.analyze")}
         </button>
       </form>
 
@@ -82,7 +84,7 @@ export default function CompliancePage() {
         <div className="space-y-5">
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
             <div className="flex items-center gap-5">
-              <p className="text-base text-gray-400 font-medium">Risk Score</p>
+              <p className="text-base text-gray-400 font-medium">{t("compliance.riskScore")}</p>
               <div className="flex items-center gap-3">
                 <div className="w-48 h-3 bg-gray-100 rounded-full overflow-hidden">
                   <div className={`h-full rounded-full transition-all ${getScoreBg(report.risk_score)}`}
@@ -95,19 +97,19 @@ export default function CompliancePage() {
           </div>
 
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-base text-gray-400 font-medium mb-2">Behavior Profile</h3>
+            <h3 className="text-base text-gray-400 font-medium mb-2">{t("compliance.behaviorProfile")}</h3>
             <p className="text-xl text-gray-800">{report.behavior_profile}</p>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-            <h3 className="text-base text-gray-400 font-medium mb-2">AI Summary</h3>
+            <h3 className="text-base text-gray-400 font-medium mb-2">{t("compliance.summary")}</h3>
             <p className="text-lg text-gray-600 leading-relaxed">{report.summary}</p>
           </div>
 
           {report.unusual_tx.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
               <h3 className="text-base text-gray-400 font-medium mb-3">
-                Unusual Transactions <span className="text-yellow-600">({report.unusual_tx.length})</span>
+                {t("compliance.unusualTxs")} <span className="text-yellow-600">({report.unusual_tx.length})</span>
               </h3>
               <div className="space-y-2">
                 {report.unusual_tx.map((tx, i) => (
