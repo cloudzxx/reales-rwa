@@ -14,11 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-[#0a0b1e] min-h-screen text-gray-100">
-        <div className="fixed inset-0 bg-gradient-to-br from-blue-950/30 via-[#0a0b1e] to-violet-950/20 pointer-events-none" />
-        <div className="fixed inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(59,130,246,0.15),transparent)] pointer-events-none" />
-        <Providers>{children}</Providers>
-      </body>
+      <body className="bg-gradient-to-b from-slate-50 to-blue-50/30 text-gray-900 min-h-screen">
     </html>
   );
 }
