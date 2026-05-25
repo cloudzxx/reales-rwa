@@ -5,5 +5,6 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --no-frozen-lockfile --registry=https://registry.npmmirror.com --config.ignore-scripts=true
 RUN pnpm rebuild keccak secp256k1
 COPY . .
-RUN npx hardhat compile
-CMD npx hardhat run scripts/deploy.js --network localhost
+COPY artifacts /app/artifacts
+COPY cache /app/cache
+CMD npx hardhat run scripts/deploy.js --network localhost --no-compile
