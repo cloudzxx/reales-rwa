@@ -2,7 +2,7 @@
 
 import { FC, ReactNode, useMemo } from "react";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
-import { UnsafeBurnerWalletAdapter } from "@solana/wallet-adapter-wallets";
+import { PhantomWalletAdapter, UnsafeBurnerWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -12,7 +12,7 @@ const SOLANA_RPC = typeof window !== "undefined"
   : "http://127.0.0.1:8899";
 
 export function SolanaProviders({ children }: { children: ReactNode }) {
-  const wallets = useMemo(() => [new UnsafeBurnerWalletAdapter()], []);
+  const wallets = useMemo(() => [new PhantomWalletAdapter(), new UnsafeBurnerWalletAdapter()], []);
 
   return (
     <ConnectionProvider endpoint={SOLANA_RPC}>
