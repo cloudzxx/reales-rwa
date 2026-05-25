@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWriteContract } from "@/lib/contract";
 
-// POST /api/token/whitelist  —  Add or remove an address from the whitelist
-// Body: { address: string, action: "add" | "remove" }
-// Signs as the contract owner and calls addToWhitelist / removeFromWhitelist
-// Only whitelisted addresses can hold or transfer this RWA token
+// POST /api/token/whitelist  —  添加或移除白名单地址
+// 请求体: { address: string, action: "add" | "remove" }
+// 使用 OWNER_PRIVATE_KEY 签名，调用合约的 addToWhitelist / removeFromWhitelist
+// 只有白名单内的地址才能持有或转账此 RWA 代币
 export async function POST(request: NextRequest) {
   try {
     const { address, action } = await request.json();

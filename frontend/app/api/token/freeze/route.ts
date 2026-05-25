@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWriteContract } from "@/lib/contract";
 
-// POST /api/token/freeze  —  Freeze or unfreeze an address
-// Body: { address: string, action: "freeze" | "unfreeze" }
-// Frozen addresses cannot send or receive any tokens until unfrozen
+// POST /api/token/freeze  —  冻结或解冻地址
+// 请求体: { address: string, action: "freeze" | "unfreeze" }
+// 被冻结的地址无法发送或接收任何代币，直到被解冻
 export async function POST(request: NextRequest) {
   try {
     const { address, action } = await request.json();

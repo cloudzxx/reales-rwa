@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getWriteContract } from "@/lib/contract";
 import { parseEther } from "ethers";
 
-// POST /api/token/issue  —  Mint new tokens
-// Body: { to: string, amount: string (in REST/ether units) }
-// Signs as the contract owner (OWNER_PRIVATE_KEY) and submits the mint transaction
-// The contract enforces: recipient must be whitelisted + not frozen + supply cap not exceeded
+// POST /api/token/issue  —  铸造新代币
+// 请求体: { to: string, amount: string（REST 单位）}
+// 使用 OWNER_PRIVATE_KEY 签名，以合约 Owner 身份提交铸造交易
+// 合约内部会校验：接收方必须在白名单内、未被冻结、不超过供应上限
 export async function POST(request: NextRequest) {
   try {
     const { to, amount } = await request.json();
