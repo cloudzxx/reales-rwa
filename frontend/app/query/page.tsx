@@ -45,7 +45,7 @@ export default function QueryPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Address Query</h1>
+      <h1 className="text-xl font-semibold text-gray-900 mb-6">Address Query</h1>
 
       <form onSubmit={handleSearch} className="max-w-lg flex gap-2 mb-6">
         <input
@@ -53,89 +53,68 @@ export default function QueryPage() {
           value={searchAddr}
           onChange={(e) => setSearchAddr(e.target.value)}
           placeholder="Enter wallet address (0x...)"
-          className="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-gray-100 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          className="flex-1 bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
         />
         <button
           type="submit"
           disabled={loading}
-          className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 text-white font-medium rounded-lg px-6 py-2 transition"
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white font-medium rounded-lg px-6 py-2.5 transition"
         >
           {loading ? "Searching..." : "Search"}
         </button>
       </form>
 
       {error && (
-        <div className="bg-red-900/50 border border-red-700 rounded-xl p-4 text-red-300 mb-6">
-          {error}
-        </div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-600 mb-6">{error}</div>
       )}
 
       {data && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-              <p className="text-sm text-gray-400">Balance</p>
-              <p className="text-xl font-semibold">
+            <div className="bg-white border border-gray-200/80 rounded-xl p-5 shadow-sm">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Balance</p>
+              <p className="text-xl font-semibold text-gray-900">
                 {Number(data.balance).toLocaleString()} REST
               </p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-              <p className="text-sm text-gray-400">Whitelist Status</p>
-              <p
-                className={`text-xl font-semibold ${
-                  data.isWhitelisted ? "text-green-400" : "text-red-400"
-                }`}
-              >
+            <div className="bg-white border border-gray-200/80 rounded-xl p-5 shadow-sm">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Whitelist</p>
+              <p className={`text-xl font-semibold ${data.isWhitelisted ? "text-green-600" : "text-red-500"}`}>
                 {data.isWhitelisted ? "Whitelisted" : "Not Whitelisted"}
               </p>
             </div>
-            <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-              <p className="text-sm text-gray-400">Freeze Status</p>
-              <p
-                className={`text-xl font-semibold ${
-                  data.isFrozen ? "text-red-400" : "text-green-400"
-                }`}
-              >
+            <div className="bg-white border border-gray-200/80 rounded-xl p-5 shadow-sm">
+              <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Status</p>
+              <p className={`text-xl font-semibold ${data.isFrozen ? "text-red-500" : "text-green-600"}`}>
                 {data.isFrozen ? "Frozen" : "Active"}
               </p>
             </div>
           </div>
 
-          <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-            <h2 className="text-lg font-semibold p-4 border-b border-gray-800">
+          <div className="bg-white border border-gray-200/80 rounded-xl shadow-sm overflow-hidden">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider p-5 border-b border-gray-100">
               Transfer History ({data.transfers.length})
             </h2>
             {data.transfers.length === 0 ? (
-              <p className="p-4 text-gray-500">No transfers found.</p>
+              <p className="p-5 text-gray-400">No transfers found.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-800 text-gray-400">
-                      <th className="text-left p-3">From</th>
-                      <th className="text-left p-3">To</th>
-                      <th className="text-right p-3">Amount</th>
-                      <th className="text-left p-3">Tx Hash</th>
+                    <tr className="border-b border-gray-100 text-gray-400 text-xs">
+                      <th className="text-left p-3 font-medium">From</th>
+                      <th className="text-left p-3 font-medium">To</th>
+                      <th className="text-right p-3 font-medium">Amount</th>
+                      <th className="text-left p-3 font-medium">Tx Hash</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.transfers.map((tx, i) => (
-                      <tr
-                        key={tx.hash + i}
-                        className="border-b border-gray-800/50"
-                      >
-                        <td className="p-3 font-mono text-xs">
-                          {tx.from.slice(0, 10)}...
-                        </td>
-                        <td className="p-3 font-mono text-xs">
-                          {tx.to.slice(0, 10)}...
-                        </td>
-                        <td className="p-3 text-right">
-                          {Number(tx.value).toLocaleString()} REST
-                        </td>
-                        <td className="p-3 font-mono text-xs text-blue-400">
-                          {tx.hash.slice(0, 14)}...
-                        </td>
+                      <tr key={tx.hash + i} className="border-b border-gray-50 hover:bg-gray-50/50">
+                        <td className="p-3 font-mono text-xs text-gray-600">{tx.from.slice(0, 10)}...</td>
+                        <td className="p-3 font-mono text-xs text-gray-600">{tx.to.slice(0, 10)}...</td>
+                        <td className="p-3 text-right font-medium">{Number(tx.value).toLocaleString()} REST</td>
+                        <td className="p-3 font-mono text-xs text-blue-500">{tx.hash.slice(0, 14)}...</td>
                       </tr>
                     ))}
                   </tbody>

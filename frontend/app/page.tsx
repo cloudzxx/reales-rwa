@@ -54,7 +54,7 @@ export default function HomePage() {
   if (!asset) {
     return (
       <div className="py-20 text-center">
-        <p className="text-red-400">
+        <p className="text-red-500">
           Failed to load asset data. Is the Hardhat node running?
         </p>
       </div>
@@ -65,43 +65,43 @@ export default function HomePage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">RWA Tokenization Platform</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4">Asset Overview</h2>
-          <dl className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+        <div className="bg-white border border-gray-200/80 rounded-xl p-6 shadow-sm">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Asset Overview</h2>
+          <dl className="space-y-4">
             <div>
-              <dt className="text-sm text-gray-400">Asset Name</dt>
-              <dd className="text-lg">{asset.name}</dd>
+              <dt className="text-xs text-gray-400">Asset Name</dt>
+              <dd className="text-lg font-medium text-gray-900">{asset.name}</dd>
             </div>
             <div>
-              <dt className="text-sm text-gray-400">Issuer</dt>
-              <dd className="text-lg">{asset.issuer}</dd>
+              <dt className="text-xs text-gray-400">Issuer</dt>
+              <dd className="text-lg font-medium text-gray-900">{asset.issuer}</dd>
             </div>
             <div>
-              <dt className="text-sm text-gray-400">Asset Type</dt>
-              <dd className="text-lg">{asset.assetType}</dd>
+              <dt className="text-xs text-gray-400">Asset Type</dt>
+              <dd className="text-lg font-medium text-gray-900">{asset.assetType}</dd>
             </div>
           </dl>
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <h2 className="text-lg font-semibold mb-4">Token Supply</h2>
-          <dl className="space-y-3">
+        <div className="bg-white border border-gray-200/80 rounded-xl p-6 shadow-sm">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Token Supply</h2>
+          <dl className="space-y-4">
             <div>
-              <dt className="text-sm text-gray-400">Total Supply</dt>
-              <dd className="text-lg">
+              <dt className="text-xs text-gray-400">Total Supply</dt>
+              <dd className="text-lg font-medium text-gray-900">
                 {Number(asset.totalSupply).toLocaleString()} REST
               </dd>
             </div>
             <div>
-              <dt className="text-sm text-gray-400">Max Supply</dt>
-              <dd className="text-lg">
+              <dt className="text-xs text-gray-400">Max Supply</dt>
+              <dd className="text-lg font-medium text-gray-900">
                 {Number(asset.maxSupply).toLocaleString()} REST
               </dd>
             </div>
             <div>
-              <dt className="text-sm text-gray-400">Contract Address</dt>
-              <dd className="text-sm font-mono text-blue-400 break-all">
+              <dt className="text-xs text-gray-400">Contract Address</dt>
+              <dd className="text-sm font-mono text-blue-600 break-all">
                 {asset.contractAddress}
               </dd>
             </div>
@@ -109,25 +109,13 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h2 className="text-lg font-semibold mb-2">How It Works</h2>
-        <ol className="list-decimal list-inside space-y-2 text-gray-300">
-          <li>
-            <strong>Issue:</strong> Contract owner mints tokenized real estate
-            tokens to whitelisted addresses
-          </li>
-          <li>
-            <strong>Transfer:</strong> Tokens can only be held and transferred
-            between whitelisted addresses
-          </li>
-          <li>
-            <strong>Freeze:</strong> Owner can freeze suspicious addresses,
-            blocking their transfers
-          </li>
-          <li>
-            <strong>Compliance:</strong> AI agent analyzes on-chain behavior
-            and generates risk reports
-          </li>
+      <div className="bg-white border border-gray-200/80 rounded-xl p-6 shadow-sm">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">How It Works</h2>
+        <ol className="list-decimal list-inside space-y-2 text-gray-600">
+          <li><strong className="text-gray-800">Issue:</strong> Contract owner mints tokenized real estate tokens to whitelisted addresses</li>
+          <li><strong className="text-gray-800">Transfer:</strong> Tokens can only be held and transferred between whitelisted addresses</li>
+          <li><strong className="text-gray-800">Freeze:</strong> Owner can freeze suspicious addresses, blocking their transfers</li>
+          <li><strong className="text-gray-800">Compliance:</strong> AI agent analyzes on-chain behavior and generates risk reports</li>
         </ol>
       </div>
     </div>
