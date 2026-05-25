@@ -3,9 +3,11 @@ const fs = require("fs");
 const path = require("path");
 
 async function main() {
+  // Use the first Hardhat account (default: 0xf39Fd...) as contract deployer
   const [deployer] = await hre.ethers.getSigners();
   console.log("Deploying with account:", deployer.address);
 
+  // Deploy RWAToken with demo asset metadata: a commercial real estate token
   const RWAToken = await hre.ethers.getContractFactory("RWAToken");
   const token = await RWAToken.deploy(
     "RealEstate Token",
@@ -20,10 +22,13 @@ async function main() {
   const contractAddress = await token.getAddress();
   console.log("RWAToken deployed to:", contractAddress);
 
+  // Read the compiled ABI from Hardhat's artifact output
   const artifact = require(
     "../artifacts/contracts/RWAToken.sol/RWAToken.json"
   );
 
+  // Write contract address and ABI to frontend/lib/
+  // so the Next.js frontend can import them at build time
   const libDir = process.env.OUTPUT_DIR || path.join(__dirname, "../../frontend/lib");
   if (!fs.existsSync(libDir)) {
     fs.mkdirSync(libDir, { recursive: true });

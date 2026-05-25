@@ -5,12 +5,16 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract RWAToken is ERC20, Ownable {
+    // Records whether an address is approved to hold/transfer tokens
     mapping(address => bool) public whitelist;
+    // Records whether an address is frozen (blocked from all transfers)
     mapping(address => bool) public frozen;
 
+    // On-chain metadata describing the real-world asset behind this token
     string public assetName;
     string public issuer;
     string public assetType;
+    // Maximum total supply that can ever be minted
     uint256 public maxSupply;
 
     event WhitelistUpdated(address indexed account, bool status);
@@ -30,9 +34,11 @@ contract RWAToken is ERC20, Ownable {
         assetType = _assetType;
         require(_maxSupply > 0, "Max supply must be > 0");
         maxSupply = _maxSupply;
+        // Deployer is automatically whitelisted so they can mint and transfer
         whitelist[msg.sender] = true;
     }
 
+    // Owner-only: mints `amount` tokens to `to` address, respecting whitelist, freeze, and supply cap
     function mint(address to, uint256 amount) external onlyOwner {
         require(totalSupply() + amount <= maxSupply, "Exceeds max supply");
         require(whitelist[to], "Recipient not whitelisted");
@@ -40,6 +46,7 @@ contract RWAToken is ERC20, Ownable {
         _mint(to, amount);
     }
 
+    // Whitelist management: only an owner can add or remove addresses
     function addToWhitelist(address account) external onlyOwner {
         whitelist[account] = true;
         emit WhitelistUpdated(account, true);
@@ -50,6 +57,7 @@ contract RWAToken is ERC20, Ownable {
         emit WhitelistUpdated(account, false);
     }
 
+    // Freeze management: frozen addresses cannot send or receive tokens
     function freeze(address account) external onlyOwner {
         frozen[account] = true;
         emit FrozenStatusUpdated(account, true);
@@ -60,10 +68,12 @@ contract RWAToken is ERC20, Ownable {
         emit FrozenStatusUpdated(account, false);
     }
 
+    // Prevent accidental renouncement — RWA ownership is not surrenderable
     function renounceOwnership() public override onlyOwner {
         revert("Cannot renounce ownership");
     }
 
+    // Owner-only: update the max supply ceiling (cannot go below current supply)
     function setMaxSupply(uint256 _maxSupply) external onlyOwner {
         require(_maxSupply >= totalSupply(), "New max below current supply");
         uint256 oldSupply = maxSupply;
@@ -71,6 +81,7 @@ contract RWAToken is ERC20, Ownable {
         emit MaxSupplyUpdated(oldSupply, _maxSupply);
     }
 
+    // Returns the full on-chain asset metadata in a single call
     function getAssetInfo()
         external
         view
@@ -79,6 +90,8 @@ contract RWAToken is ERC20, Ownable {
         return (assetName, issuer, assetType, maxSupply);
     }
 
+    // Override ERC20's internal _update hook to inject compliance checks
+    // For minting (from==0) or burning (to==0), skip the corresponding checks
     function _update(address from, address to, uint256 value) internal override {
         if (from != address(0)) {
             require(!frozen[from], "Sender is frozen");

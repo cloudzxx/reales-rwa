@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWriteContract } from "@/lib/contract";
 
+// POST /api/token/freeze  —  Freeze or unfreeze an address
+// Body: { address: string, action: "freeze" | "unfreeze" }
+// Frozen addresses cannot send or receive any tokens until unfrozen
 export async function POST(request: NextRequest) {
   try {
     const { address, action } = await request.json();

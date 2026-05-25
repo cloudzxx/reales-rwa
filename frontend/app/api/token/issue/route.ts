@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getWriteContract } from "@/lib/contract";
 import { parseEther } from "ethers";
 
+// POST /api/token/issue  —  Mint new tokens
+// Body: { to: string, amount: string (in REST/ether units) }
+// Signs as the contract owner (OWNER_PRIVATE_KEY) and submits the mint transaction
+// The contract enforces: recipient must be whitelisted + not frozen + supply cap not exceeded
 export async function POST(request: NextRequest) {
   try {
     const { to, amount } = await request.json();

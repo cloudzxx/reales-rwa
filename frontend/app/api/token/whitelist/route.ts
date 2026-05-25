@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWriteContract } from "@/lib/contract";
 
+// POST /api/token/whitelist  —  Add or remove an address from the whitelist
+// Body: { address: string, action: "add" | "remove" }
+// Signs as the contract owner and calls addToWhitelist / removeFromWhitelist
+// Only whitelisted addresses can hold or transfer this RWA token
 export async function POST(request: NextRequest) {
   try {
     const { address, action } = await request.json();
