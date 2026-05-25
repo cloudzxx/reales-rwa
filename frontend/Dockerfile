@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install --registry=https://registry.npmmirror.com
 COPY . .
-RUN mkdir -p lib
+RUN rm -rf node_modules/.cache && mkdir -p lib
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENV NEXT_TELEMETRY_DISABLED=1
