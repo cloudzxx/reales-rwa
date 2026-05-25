@@ -8,4 +8,6 @@ if [ -f /generated/deployment.ts ]; then
   echo "Deployment files copied from /generated/"
 fi
 
-exec npx next dev -p 3000
+# Build and start in production mode
+npx next build
+exec npx next start -p 3000
