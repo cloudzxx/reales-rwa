@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getReadContract } from "@/lib/contract";
 import { formatEther } from "ethers";
 import { useI18n } from "@/lib/i18n/context";
+import { useChain } from "@/lib/chain-context";
 
 interface AssetInfo {
   name: string;
@@ -16,34 +17,41 @@ interface AssetInfo {
 
 export default function HomePage() {
   const { t } = useI18n();
+  const { chain } = useChain();
   const [asset, setAsset] = useState<AssetInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const contract = getReadContract();
-        const [name, issuer, assetType, maxSupply] =
-          await contract.getAssetInfo();
-        const totalSupply = await contract.totalSupply();
-        const address = await contract.getAddress();
+    if (chain === "evm") {
+      async function load() {
+        try {
+          const contract = getReadContract();
+          const [name, issuer, assetType, maxSupply] =
+            await contract.getAssetInfo();
+          const totalSupply = await contract.totalSupply();
+          const address = await contract.getAddress();
 
-        setAsset({
-          name,
-          issuer,
-          assetType,
-          maxSupply: formatEther(maxSupply),
-          totalSupply: formatEther(totalSupply),
-          contractAddress: address,
-        });
-      } catch (err) {
-        console.error("Failed to load asset info:", err);
-      } finally {
-        setLoading(false);
+          setAsset({
+            name,
+            issuer,
+            assetType,
+            maxSupply: formatEther(maxSupply),
+            totalSupply: formatEther(totalSupply),
+            contractAddress: address,
+          });
+        } catch (err) {
+          console.error("Failed to load asset info:", err);
+        } finally {
+          setLoading(false);
+        }
       }
+      load();
+    } else {
+      // Solana: 显示 Solana 平台概览
+      setAsset(null);
+      setLoading(false);
     }
-    load();
-  }, []);
+  }, [chain]);
 
   if (loading) {
     return (
@@ -54,6 +62,54 @@ export default function HomePage() {
   }
 
   if (!asset) {
+    if (chain === "solana") {
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">{t("home.title")}</h1>
+              <p className="text-lg text-gray-500 mt-1">{t("home.subtitle")} — Solana</p>
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Solana Localnet
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-700 mb-4">Solana RWA Token</h2>
+              <p className="text-base text-gray-500">SPL Token + Anchor PDA whitelist + freeze_authority</p>
+              <p className="text-sm text-gray-400 mt-3">Program: reales-rwa-solana</p>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-gray-700 mb-4">Quick Start</h2>
+              <dl className="space-y-3 text-sm">
+                <div><dt className="text-gray-400">Deploy</dt><dd className="font-mono text-gray-600">anchor deploy</dd></div>
+                <div><dt className="text-gray-400">Init Token</dt><dd className="font-mono text-gray-600">anchor run init</dd></div>
+                <div><dt className="text-gray-400">Whitelist</dt><dd className="font-mono text-gray-600">anchor run add-wl</dd></div>
+              </dl>
+            </div>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-700 mb-4">How It Works</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { step: "01", title: "Init Token", desc: "Create SPL Token with freeze_authority set to program PDA" },
+                { step: "02", title: "Whitelist", desc: "PDA stores whitelist entries [b\"wl\", addr]" },
+                { step: "03", title: "Mint", desc: "Mint tokens only to whitelisted addresses" },
+                { step: "04", title: "Freeze/Thaw", desc: "SPL Token native freeze via program authority" },
+              ].map(({ step, title, desc }) => (
+                <div key={step} className="bg-gray-50 border border-gray-100 rounded-xl p-5">
+                  <span className="text-sm font-mono text-blue-500">{step}</span>
+                  <h3 className="text-lg font-semibold text-gray-800 mt-2 mb-1.5">{title}</h3>
+                  <p className="text-base text-gray-500 leading-relaxed">{desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="py-24 text-center">
         <p className="text-red-500">{t("home.loadError")}</p>

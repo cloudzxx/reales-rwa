@@ -4,12 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 const AI_AGENT_URL = process.env.AI_AGENT_URL || "http://127.0.0.1:8000";
 
 // POST /api/compliance/report  —  代理转发到 AI 合规分析 Agent
-// 请求体: { address: string }
-// 将请求转发到 Python FastAPI 服务的 /analyze/address 端点
-// 该服务会拉取链上数据，并通过 LLM 进行风险评估
 export async function POST(request: NextRequest) {
   try {
-    const { address } = await request.json();
+    const { address, chain } = await request.json();
 
     if (!address) {
       return NextResponse.json(
@@ -18,13 +15,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 动态导入 deployment.ts，确保运行时可获取合约地址
+    // 根据链选择对应的 AI Agent 端点
+    const endpoint = chain === "solana" ? "/analyze/solana" : "/analyze/address";
+
     const { CONTRACT_ADDRESS } = await import("@/lib/deployment");
 
-    const res = await fetch(`${AI_AGENT_URL}/analyze/address`, {
+    const res = await fetch(`${AI_AGENT_URL}${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ address, contract_address: CONTRACT_ADDRESS }),
+      body: chain === "solana"
+        ? JSON.stringify({ address })
+        : JSON.stringify({ address, contract_address: CONTRACT_ADDRESS }),
     });
 
     if (!res.ok) {

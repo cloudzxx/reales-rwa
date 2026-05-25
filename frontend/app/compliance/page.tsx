@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n/context";
+import { useChain } from "@/lib/chain-context";
 
 interface ComplianceReport {
   risk_score: number;
@@ -24,6 +25,7 @@ function getScoreBg(score: number): string {
 
 export default function CompliancePage() {
   const { t } = useI18n();
+  const { chain } = useChain();
   const [addr, setAddr] = useState("");
   const [report, setReport] = useState<ComplianceReport | null>(null);
   const [loading, setLoading] = useState(false);
@@ -40,7 +42,7 @@ export default function CompliancePage() {
       const res = await fetch("/api/compliance/report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: addr }),
+        body: JSON.stringify({ address: addr, chain }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);

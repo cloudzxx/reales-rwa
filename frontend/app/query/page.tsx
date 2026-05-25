@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n/context";
+import { useChain } from "@/lib/chain-context";
 
 interface Transfer {
   from: string;
@@ -21,6 +22,7 @@ interface AddressData {
 
 export default function QueryPage() {
   const { t } = useI18n();
+  const { chain } = useChain();
   const [searchAddr, setSearchAddr] = useState("");
   const [data, setData] = useState<AddressData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -34,10 +36,28 @@ export default function QueryPage() {
     setData(null);
 
     try {
-      const res = await fetch(`/api/token/${searchAddr}`);
+      const route = chain === "solana" ? `/api/solana/token?address=${searchAddr}` : `/api/token/${searchAddr}`;
+      const res = await fetch(route);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      setData(json);
+
+      if (chain === "solana") {
+        // Solana 响应格式：{ address, tokens: [{mint, balance, uiBalance, isFrozen}] }
+        const totalBalance = (json.tokens || []).reduce(
+          (sum: number, t: any) => sum + (t.uiBalance || 0),
+          0,
+        );
+        const tokens = json.tokens || [];
+        setData({
+          address: json.address,
+          balance: totalBalance.toFixed(4),
+          isWhitelisted: true,
+          isFrozen: tokens.some((t: any) => t.isFrozen),
+          transfers: [],
+        });
+      } else {
+        setData(json);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
