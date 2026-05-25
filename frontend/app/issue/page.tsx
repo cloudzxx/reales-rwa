@@ -66,7 +66,7 @@ export default function IssuePage() {
   if (checking) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
       </div>
     );
   }
@@ -83,39 +83,39 @@ export default function IssuePage() {
   return (
     <div className="max-w-lg mx-auto">
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-white">Issue Tokens</h1>
-        <p className="text-sm text-white/40 mt-1">Mint new RWA tokens to a whitelisted address</p>
+        <h1 className="text-2xl font-semibold text-white">Issue Tokens</h1>
+        <p className="text-sm text-white/50 mt-1">Mint new RWA tokens to a whitelisted address</p>
       </div>
 
       <form onSubmit={handleIssue} className="bg-white/[0.08] backdrop-blur-xl border border-white/[0.1] rounded-2xl p-6 space-y-5">
         <div>
-          <label className="block text-sm font-medium text-white/60 mb-2">Recipient Address</label>
+          <label className="block text-base font-medium text-gray-300 mb-2">Recipient Address</label>
           <input
             type="text"
             value={to}
             onChange={(e) => setTo(e.target.value)}
             placeholder="0x..."
             required
-            className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition font-mono text-sm"
+            className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:border-blue-400/50 transition font-mono text-sm"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-white/60 mb-2">Amount (REST)</label>
+          <label className="block text-base font-medium text-gray-300 mb-2">Amount (REST)</label>
           <input
             type="text"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="100"
             required
-            className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition"
+            className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:border-blue-400/50 transition"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 disabled:from-white/[0.08] disabled:to-white/[0.08] disabled:text-white/20 text-white font-medium rounded-xl px-4 py-2.5 transition-all"
+          className="w-full bg-gradient-to-r from-blue-400 to-violet-400 hover:from-blue-300 hover:to-violet-300 disabled:from-white/[0.08] disabled:to-white/[0.08] disabled:text-white/20 text-white font-medium rounded-xl px-4 py-2.5 transition-all"
         >
           {loading ? "Issuing..." : "Issue Tokens"}
         </button>

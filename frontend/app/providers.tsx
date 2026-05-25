@@ -42,7 +42,7 @@ function Header() {
     <header className="sticky top-0 z-50 bg-[#0a0b1e]/80 backdrop-blur-xl border-b border-white/[0.06]">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <span className="w-8 h-8 bg-gradient-to-br from-blue-500 to-violet-500 rounded-xl flex items-center justify-center text-white text-sm font-bold group-hover:shadow-lg group-hover:shadow-blue-500/25 transition-shadow">R</span>
+          <span className="w-8 h-8 bg-gradient-to-br from-blue-400 to-violet-400 rounded-xl flex items-center justify-center text-white text-sm font-bold group-hover:shadow-lg group-hover:shadow-blue-400/25 transition-shadow">R</span>
           <span className="text-sm font-semibold text-white/90">RWA Platform</span>
         </Link>
         <nav className="flex gap-0.5">
@@ -72,7 +72,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider theme={darkTheme({
-          accentColor: '#6366f1',
+          accentColor: '#60a5fa',
           accentColorForeground: '#fff',
           borderRadius: 'medium',
           fontStack: 'system',

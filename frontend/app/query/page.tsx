@@ -56,12 +56,12 @@ export default function QueryPage() {
           value={searchAddr}
           onChange={(e) => setSearchAddr(e.target.value)}
           placeholder="Enter wallet address (0x...)"
-          className="flex-1 bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition font-mono text-sm"
+          className="flex-1 bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-400/30 focus:border-blue-400/50 transition font-mono text-sm"
         />
         <button
           type="submit"
           disabled={loading}
-          className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 disabled:from-white/[0.08] disabled:to-white/[0.08] disabled:text-white/20 text-white font-medium rounded-xl px-6 py-2.5 transition-all"
+          className="bg-gradient-to-r from-blue-400 to-violet-400 hover:from-blue-300 hover:to-violet-300 disabled:from-white/[0.08] disabled:to-white/[0.08] disabled:text-white/20 text-white font-medium rounded-xl px-6 py-2.5 transition-all"
         >
           {loading ? "Searching..." : "Search"}
         </button>
@@ -115,7 +115,7 @@ export default function QueryPage() {
                         <td className="p-3 font-mono text-xs text-white/50">{tx.from.slice(0, 10)}...</td>
                         <td className="p-3 font-mono text-xs text-white/50">{tx.to.slice(0, 10)}...</td>
                         <td className="p-3 text-right font-medium text-white/70">{Number(tx.value).toLocaleString()}</td>
-                        <td className="p-3 font-mono text-xs text-blue-400/60">{tx.hash.slice(0, 14)}...</td>
+                        <td className="p-3 font-mono text-xs text-blue-300/60">{tx.hash.slice(0, 14)}...</td>
                       </tr>
                     ))}
                   </tbody>
