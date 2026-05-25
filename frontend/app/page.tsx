@@ -67,8 +67,8 @@ export default function HomePage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{t("home.title")}</h1>
-              <p className="text-lg text-gray-500 mt-1">{t("home.subtitle")} — Solana</p>
+              <h1 className="text-3xl font-bold text-gray-900">RWA Tokenization</h1>
+              <p className="text-lg text-gray-500 mt-1">Real World Asset on-chain management — Solana</p>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -77,16 +77,28 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-700 mb-4">Solana RWA Token</h2>
-              <p className="text-base text-gray-500">SPL Token + Anchor PDA whitelist + freeze_authority</p>
-              <p className="text-sm text-gray-400 mt-3">Program: reales-rwa-solana</p>
+              <h2 className="text-lg font-semibold text-gray-700 mb-4">Token Overview</h2>
+              <dl className="space-y-4">
+                <div>
+                  <dt className="text-sm text-gray-400">Standard</dt>
+                  <dd className="text-lg font-medium text-gray-900">SPL Token (Anchor)</dd>
+                </div>
+                <div className="flex gap-10">
+                  <div><dt className="text-sm text-gray-400">Decimals</dt><dd className="text-lg text-gray-800">9</dd></div>
+                  <div><dt className="text-sm text-gray-400">Freeze</dt><dd className="text-lg text-green-600">Native</dd></div>
+                </div>
+                <div><dt className="text-sm text-gray-400">Program</dt><dd className="text-sm font-mono text-blue-600 break-all">reales-rwa-solana</dd></div>
+              </dl>
             </div>
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-700 mb-4">Quick Start</h2>
-              <dl className="space-y-3 text-sm">
-                <div><dt className="text-gray-400">Deploy</dt><dd className="font-mono text-gray-600">anchor deploy</dd></div>
-                <div><dt className="text-gray-400">Init Token</dt><dd className="font-mono text-gray-600">anchor run init</dd></div>
-                <div><dt className="text-gray-400">Whitelist</dt><dd className="font-mono text-gray-600">anchor run add-wl</dd></div>
+              <h2 className="text-lg font-semibold text-gray-700 mb-4">Compliance</h2>
+              <dl className="space-y-4">
+                <div className="flex gap-10">
+                  <div><dt className="text-sm text-gray-400">Whitelist</dt><dd className="text-lg text-gray-800">PDA-based</dd></div>
+                  <div><dt className="text-sm text-gray-400">Freeze</dt><dd className="text-lg text-gray-800">freeze_authority</dd></div>
+                </div>
+                <div><dt className="text-sm text-gray-400">Access Control</dt><dd className="text-lg text-gray-800">Anchor Signer</dd></div>
+                <div><dt className="text-sm text-gray-400">Deploy</dt><dd className="text-sm font-mono text-gray-500">anchor deploy</dd></div>
               </dl>
             </div>
           </div>
@@ -94,9 +106,9 @@ export default function HomePage() {
             <h2 className="text-lg font-semibold text-gray-700 mb-4">How It Works</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { step: "01", title: "Init Token", desc: "Create SPL Token with freeze_authority set to program PDA" },
-                { step: "02", title: "Whitelist", desc: "PDA stores whitelist entries [b\"wl\", addr]" },
-                { step: "03", title: "Mint", desc: "Mint tokens only to whitelisted addresses" },
+                { step: "01", title: "Init Token", desc: "Create SPL Token, set freeze_authority to program PDA" },
+                { step: "02", title: "Whitelist", desc: "On-chain PDA per address [b\"wl\", addr]" },
+                { step: "03", title: "Mint", desc: "Only whitelisted addresses can receive tokens" },
                 { step: "04", title: "Freeze/Thaw", desc: "SPL Token native freeze via program authority" },
               ].map(({ step, title, desc }) => (
                 <div key={step} className="bg-gray-50 border border-gray-100 rounded-xl p-5">
