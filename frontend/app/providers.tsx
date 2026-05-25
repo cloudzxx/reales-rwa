@@ -17,6 +17,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Link from "next/link";
 import { I18nProvider, useI18n, type Lang } from "@/lib/i18n/context";
 import { ChainProvider, useChain, type Chain } from "@/lib/chain-context";
+import { SolanaProviders } from "@/lib/solana/SolanaProviders";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 const connectors = connectorsForWallets(
   [
@@ -70,9 +72,7 @@ function Header() {
             {lang === "en" ? "中文" : "EN"}
           </button>
         </nav>
-        {chain === "evm" ? <ConnectButton /> : (
-          <div className="text-sm text-gray-400">Solana Mode</div>
-        )}
+        {chain === "evm" ? <ConnectButton /> : <WalletMultiButton />}
       </div>
     </header>
   );
@@ -80,9 +80,10 @@ function Header() {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={lightTheme({
+    <SolanaProviders>
+      <WagmiProvider config={config}>
+        <QueryClientProvider client={queryClient}>
+          <RainbowKitProvider theme={lightTheme({
           accentColor: '#3b82f6',
           accentColorForeground: '#fff',
           borderRadius: 'large',
@@ -97,5 +98,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
+    </SolanaProviders>
   );
 }
