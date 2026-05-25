@@ -1,7 +1,9 @@
 FROM node:22-alpine
 WORKDIR /app
-COPY package.json ./
-RUN npm install --registry=https://registry.npmmirror.com
+RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --no-frozen-lockfile --config.ignore-scripts=true
+RUN pnpm rebuild keccak secp256k1
 COPY . .
 RUN npx hardhat compile
 EXPOSE 8545
