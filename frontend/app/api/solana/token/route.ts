@@ -3,7 +3,6 @@ import { getSolanaConnection } from "@/lib/solana/provider";
 import { PublicKey } from "@solana/web3.js";
 
 // GET /api/solana/token?address=xxx — 查询 Solana 地址的 SPL Token 持仓
-// 使用 Solana 的 getParsedTokenAccountsByOwner 解析代币账户数据
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -16,7 +15,6 @@ export async function GET(request: NextRequest) {
     const connection = getSolanaConnection();
     const pubkey = new PublicKey(address);
 
-    // 获取该地址所有 SPL Token 账户的解析数据
     const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
       pubkey,
       { programId: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA") }
@@ -39,6 +37,35 @@ export async function GET(request: NextRequest) {
     console.error("Solana query error:", err);
     return NextResponse.json(
       { error: err.message || "Solana query failed" },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/solana/token — 模拟 Solana 代币操作
+// 需要 Anchor 程序部署后才能实际执行链上交易
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { action, to, amount, from } = body;
+
+    if (!action) {
+      return NextResponse.json({ error: "Missing action" }, { status: 400 });
+    }
+
+    // 模拟返回交易签名（实际需调用 Anchor 程序）
+    const mockSignature = `sol_tx_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+
+    return NextResponse.json({
+      success: true,
+      signature: mockSignature,
+      action,
+      message: `Simulated ${action} on Solana localnet`,
+    });
+  } catch (err: any) {
+    console.error("Solana POST error:", err);
+    return NextResponse.json(
+      { error: err.message || "Solana operation failed" },
       { status: 500 }
     );
   }

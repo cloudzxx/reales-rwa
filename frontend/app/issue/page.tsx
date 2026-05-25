@@ -2,46 +2,57 @@
 
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { getReadContract } from "@/lib/contract";
 import { useI18n } from "@/lib/i18n/context";
+import { useChain } from "@/lib/chain-context";
 
 export default function IssuePage() {
   const { t } = useI18n();
-  const { isConnected, address } = useAccount();
+  const { chain } = useChain();
+  const evmWallet = useAccount();
+  const solWallet = useWallet();
+
+  const isEvmConnected = evmWallet.isConnected;
+  const evmAddress = evmWallet.address;
+  const isSolConnected = solWallet.connected;
+  const solAddress = solWallet.publicKey?.toBase58();
+
   const [to, setTo] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
     txHash: string;
-    blockNumber: number;
+    blockNumber?: number;
+    signature?: string;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [checking, setChecking] = useState(true);
   const [contractOwner, setContractOwner] = useState("");
 
-  // whitelist & freeze
-  const [wlAddr, setWlAddr] = useState("");
-  const [freezeAddr, setFreezeAddr] = useState("");
-  const [adminLoading, setAdminLoading] = useState(false);
-  const [adminResult, setAdminResult] = useState<string | null>(null);
-
   useEffect(() => {
-    async function checkOwner() {
-      try {
-        const contract = getReadContract();
-        const owner = await contract.owner();
-        setContractOwner(owner);
-        if (address) {
-          setIsOwner(owner.toLowerCase() === address.toLowerCase());
+    if (chain === "evm") {
+      (async () => {
+        try {
+          const contract = getReadContract();
+          const owner = await contract.owner();
+          setContractOwner(owner);
+          if (evmAddress) {
+            setIsOwner(owner.toLowerCase() === evmAddress.toLowerCase());
+          }
+        } catch {
+          setIsOwner(false);
         }
-      } catch {
-        setIsOwner(false);
-      }
+        setChecking(false);
+      })();
+    } else {
+      // Solana: any connected wallet is admin on localnet
+      setContractOwner("");
+      setIsOwner(solWallet.connected);
       setChecking(false);
     }
-    checkOwner();
-  }, [address]);
+  }, [chain, evmAddress, solWallet.connected]);
 
   async function handleIssue(e: React.FormEvent) {
     e.preventDefault();
@@ -50,14 +61,25 @@ export default function IssuePage() {
     setResult(null);
 
     try {
-      const res = await fetch("/api/token/issue", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to, amount }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setResult(data);
+      if (chain === "evm") {
+        const res = await fetch("/api/token/issue", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ to, amount }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        setResult(data);
+      } else {
+        const res = await fetch("/api/solana/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "mint", to, amount, from: solAddress }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        setResult(data);
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -65,51 +87,20 @@ export default function IssuePage() {
     }
   }
 
-  async function handleWhitelist(action: "add" | "remove") {
-    setAdminLoading(true);
-    setAdminResult(null);
-    try {
-      const res = await fetch("/api/token/whitelist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: wlAddr, action }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setAdminResult(`Whitelist ${action}: ${data.txHash.slice(0, 14)}...`);
-    } catch (err: any) {
-      setAdminResult("Error: " + err.message);
-    } finally {
-      setAdminLoading(false);
-    }
-  }
+  const connected = chain === "evm" ? isEvmConnected : isSolConnected;
+  const currentAddress = chain === "evm" ? evmAddress : solAddress;
 
-  async function handleFreeze(action: "freeze" | "unfreeze") {
-    setAdminLoading(true);
-    setAdminResult(null);
-    try {
-      const res = await fetch("/api/token/freeze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: freezeAddr, action }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setAdminResult(`Freeze ${action}: ${data.txHash.slice(0, 14)}...`);
-    } catch (err: any) {
-      setAdminResult("Error: " + err.message);
-    } finally {
-      setAdminLoading(false);
-    }
-  }
-
-  if (!isConnected) {
+  if (!connected) {
     return (
       <div className="py-24 text-center max-w-lg mx-auto">
         <p className="text-xl text-gray-500 mb-6">{t("issue.connectPrompt")}</p>
         <div className="bg-white border border-gray-200 rounded-xl p-5 text-left shadow-sm">
           <p className="text-base text-gray-400 mb-2">{t("issue.contractOwner")}</p>
-          <p className="text-lg font-mono text-blue-600 break-all">{contractOwner || t("common.loading")}</p>
+          {chain === "evm" ? (
+            <p className="text-lg font-mono text-blue-600 break-all">{contractOwner || t("common.loading")}</p>
+          ) : (
+            <p className="text-lg text-gray-600">Any connected wallet</p>
+          )}
         </div>
       </div>
     );
@@ -124,23 +115,33 @@ export default function IssuePage() {
   }
 
   if (!isOwner) {
+    const pk = chain === "evm"
+      ? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+      : "use the Phantom wallet that deployed the program";
+
     return (
       <div className="py-24 text-center max-w-lg mx-auto">
         <p className="text-xl text-red-500 mb-6">{t("issue.notOwner")}</p>
         <div className="bg-white border border-gray-200 rounded-xl p-5 text-left shadow-sm space-y-4">
           <div>
             <p className="text-base text-gray-400 mb-1">{t("issue.contractOwner")}</p>
-            <p className="text-lg font-mono text-blue-600 break-all">{contractOwner || "..."}</p>
+            {chain === "evm" ? (
+              <p className="text-lg font-mono text-blue-600 break-all">{contractOwner || "..."}</p>
+            ) : (
+              <p className="text-lg text-gray-600">Admin signer on Solana</p>
+            )}
           </div>
           <div>
             <p className="text-base text-gray-400 mb-1">{t("issue.yourAddress")}</p>
-            <p className="text-lg font-mono text-gray-600 break-all">{address}</p>
+            <p className="text-lg font-mono text-gray-600 break-all">{currentAddress}</p>
           </div>
         </div>
         <p className="text-base text-gray-400 mt-5">
-          {t("issue.importKey")}
-          {contractOwner === "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266" && (
-            <><br /><code className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded mt-2 inline-block break-all">0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80</code></>
+          {chain === "evm" ? (
+            <>Import the owner private key into {evmAddress ? "the correct wallet" : "MetaMask"}.
+              <br /><code className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded mt-2 inline-block break-all">{pk}</code></>
+          ) : (
+            <>Connect the admin Phantom wallet to mint tokens on Solana.</>
           )}
         </p>
       </div>
@@ -151,7 +152,7 @@ export default function IssuePage() {
     <div className="max-w-lg mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">{t("issue.title")}</h1>
-        <p className="text-lg text-gray-500 mt-1">{t("issue.subtitle")}</p>
+        <p className="text-lg text-gray-500 mt-1">{t("issue.subtitle")} ({chain.toUpperCase()})</p>
       </div>
 
       <form onSubmit={handleIssue} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-6">
@@ -161,7 +162,7 @@ export default function IssuePage() {
             type="text"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            placeholder="0x..."
+            placeholder="0x... / Solana address"
             required
             className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition font-mono"
           />
@@ -195,42 +196,106 @@ export default function IssuePage() {
       {result && (
         <div className="mt-5 bg-green-50 border border-green-200 rounded-xl p-5 text-green-700 space-y-2">
           <p className="text-lg font-semibold">{t("issue.success")}</p>
-          <p className="text-base font-mono break-all text-green-600">{t("issue.tx")}: {result.txHash}</p>
-          <p className="text-base text-green-600">{t("issue.block")} #{result.blockNumber}</p>
+          <p className="text-base font-mono break-all text-green-600">{result.txHash || result.signature}</p>
+          {result.blockNumber && <p className="text-base text-green-600">{t("issue.block")} #{result.blockNumber}</p>}
         </div>
       )}
 
-      <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Whitelist</h2>
-          <p className="text-sm text-gray-400 mb-4">Add or remove an address from the whitelist</p>
-          <div className="space-y-3">
-            <input type="text" value={wlAddr} onChange={e => setWlAddr(e.target.value)} placeholder="0x..." className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition font-mono" />
-            <div className="flex gap-2">
-              <button onClick={() => handleWhitelist("add")} disabled={adminLoading || !wlAddr} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Add</button>
-              <button onClick={() => handleWhitelist("remove")} disabled={adminLoading || !wlAddr} className="flex-1 bg-red-500 hover:bg-red-400 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Remove</button>
-            </div>
-          </div>
+      {chain === "solana" && (
+        <div className="mt-10 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Whitelist & Freeze</h2>
+          <p className="text-lg text-gray-500">Managed via Anchor program — use Solana CLI to invoke instructions.</p>
         </div>
+      )}
 
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Freeze</h2>
-          <p className="text-sm text-gray-400 mb-4">Freeze or unfreeze an address</p>
-          <div className="space-y-3">
-            <input type="text" value={freezeAddr} onChange={e => setFreezeAddr(e.target.value)} placeholder="0x..." className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition font-mono" />
-            <div className="flex gap-2">
-              <button onClick={() => handleFreeze("freeze")} disabled={adminLoading || !freezeAddr} className="flex-1 bg-red-500 hover:bg-red-400 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Freeze</button>
-              <button onClick={() => handleFreeze("unfreeze")} disabled={adminLoading || !freezeAddr} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Unfreeze</button>
+      {chain === "evm" && (
+        <>
+          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Whitelist</h2>
+              <p className="text-sm text-gray-400 mb-4">Add or remove an address from the whitelist</p>
+              <WhitelistSection />
+            </div>
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">Freeze</h2>
+              <p className="text-sm text-gray-400 mb-4">Freeze or unfreeze an address</p>
+              <FreezeSection />
             </div>
           </div>
-        </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function WhitelistSection() {
+  const [addr, setAddr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  async function handle(action: "add" | "remove") {
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/token/whitelist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: addr, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setResult(`${action}: ${data.txHash.slice(0, 14)}...`);
+    } catch (err: any) {
+      setResult("Error: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <input type="text" value={addr} onChange={e => setAddr(e.target.value)} placeholder="0x..." className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition font-mono" />
+      <div className="flex gap-2">
+        <button onClick={() => handle("add")} disabled={loading || !addr} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Add</button>
+        <button onClick={() => handle("remove")} disabled={loading || !addr} className="flex-1 bg-red-500 hover:bg-red-400 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Remove</button>
       </div>
+      {result && <p className={`text-base ${result.startsWith("Error") ? "text-red-600" : "text-emerald-600"}`}>{result}</p>}
+    </div>
+  );
+}
 
-      {adminResult && (
-        <div className={`mt-5 rounded-2xl p-5 text-lg border ${adminResult.startsWith("Error") ? "bg-red-50 border-red-200 text-red-600" : "bg-emerald-50 border-emerald-200 text-emerald-700"}`}>
-          {adminResult}
-        </div>
-      )}
+function FreezeSection() {
+  const [addr, setAddr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  async function handle(action: "freeze" | "unfreeze") {
+    setLoading(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/token/freeze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: addr, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setResult(`${action}: ${data.txHash.slice(0, 14)}...`);
+    } catch (err: any) {
+      setResult("Error: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <input type="text" value={addr} onChange={e => setAddr(e.target.value)} placeholder="0x..." className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition font-mono" />
+      <div className="flex gap-2">
+        <button onClick={() => handle("freeze")} disabled={loading || !addr} className="flex-1 bg-red-500 hover:bg-red-400 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Freeze</button>
+        <button onClick={() => handle("unfreeze")} disabled={loading || !addr} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Unfreeze</button>
+      </div>
+      {result && <p className={`text-base ${result.startsWith("Error") ? "text-red-600" : "text-emerald-600"}`}>{result}</p>}
     </div>
   );
 }
