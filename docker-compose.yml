@@ -6,10 +6,11 @@ services:
     ports:
       - "8545:8545"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8545", "-d", '{"method":"eth_blockNumber","params":[],"id":1,"jsonrpc":"2.0"}']
+      test: ["CMD-SHELL", "curl -sf http://localhost:8545 -X POST -H 'Content-Type: application/json' -d '{\"method\":\"eth_blockNumber\",\"params\":[],\"id\":1,\"jsonrpc\":\"2.0\"}'"]
       interval: 3s
       timeout: 5s
-      retries: 20
+      retries: 30
+      start_period: 5s
 
   deploy:
     build:
