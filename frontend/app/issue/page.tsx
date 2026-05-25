@@ -87,7 +87,7 @@ export default function IssuePage() {
         <p className="text-sm text-white/40 mt-1">Mint new RWA tokens to a whitelisted address</p>
       </div>
 
-      <form onSubmit={handleIssue} className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-6 space-y-5">
+      <form onSubmit={handleIssue} className="bg-white/[0.08] backdrop-blur-xl border border-white/[0.1] rounded-2xl p-6 space-y-5">
         <div>
           <label className="block text-sm font-medium text-white/60 mb-2">Recipient Address</label>
           <input
@@ -96,7 +96,7 @@ export default function IssuePage() {
             onChange={(e) => setTo(e.target.value)}
             placeholder="0x..."
             required
-            className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition font-mono text-sm"
+            className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition font-mono text-sm"
           />
         </div>
 
@@ -108,7 +108,7 @@ export default function IssuePage() {
             onChange={(e) => setAmount(e.target.value)}
             placeholder="100"
             required
-            className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition"
+            className="w-full bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition"
           />
         </div>
 

@@ -63,7 +63,7 @@ export default function CompliancePage() {
           value={addr}
           onChange={(e) => setAddr(e.target.value)}
           placeholder="Enter wallet address to analyze"
-          className="flex-1 bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition font-mono text-sm"
+          className="flex-1 bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition font-mono text-sm"
         />
         <button
           type="submit"
@@ -80,7 +80,7 @@ export default function CompliancePage() {
 
       {report && (
         <div className="space-y-5">
-          <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-6">
+          <div className="bg-white/[0.08] backdrop-blur-xl border border-white/[0.1] rounded-2xl p-6">
             <div className="flex items-center gap-4">
               <p className="text-xs text-white/30 uppercase tracking-wider">Risk Score</p>
               <div className="flex items-center gap-3">
@@ -94,18 +94,18 @@ export default function CompliancePage() {
             </div>
           </div>
 
-          <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-6">
+          <div className="bg-white/[0.08] backdrop-blur-xl border border-white/[0.1] rounded-2xl p-6">
             <h3 className="text-xs text-white/30 uppercase tracking-wider mb-2">Behavior Profile</h3>
             <p className="text-white/80">{report.behavior_profile}</p>
           </div>
 
-          <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-6">
+          <div className="bg-white/[0.08] backdrop-blur-xl border border-white/[0.1] rounded-2xl p-6">
             <h3 className="text-xs text-white/30 uppercase tracking-wider mb-2">AI Summary</h3>
             <p className="text-white/60 leading-relaxed text-sm">{report.summary}</p>
           </div>
 
           {report.unusual_tx.length > 0 && (
-            <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-6">
+          <div className="bg-white/[0.08] backdrop-blur-xl border border-white/[0.1] rounded-2xl p-6">
               <h3 className="text-xs text-white/30 uppercase tracking-wider mb-3">
                 Unusual Transactions <span className="text-yellow-400/60">({report.unusual_tx.length})</span>
               </h3>

@@ -56,7 +56,7 @@ export default function QueryPage() {
           value={searchAddr}
           onChange={(e) => setSearchAddr(e.target.value)}
           placeholder="Enter wallet address (0x...)"
-          className="flex-1 bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition font-mono text-sm"
+          className="flex-1 bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-2.5 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500/50 transition font-mono text-sm"
         />
         <button
           type="submit"
@@ -74,26 +74,26 @@ export default function QueryPage() {
       {data && (
         <div className="space-y-5">
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-5">
-              <p className="text-xs text-white/30 uppercase tracking-wider mb-1">Balance</p>
+            <div className="bg-white/[0.08] backdrop-blur-xl border border-white/[0.1] rounded-2xl p-5">
+              <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Balance</p>
               <p className="text-xl font-semibold text-white">{Number(data.balance).toLocaleString()}</p>
             </div>
-            <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-5">
-              <p className="text-xs text-white/30 uppercase tracking-wider mb-1">Whitelist</p>
+            <div className="bg-white/[0.08] backdrop-blur-xl border border-white/[0.1] rounded-2xl p-5">
+              <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Whitelist</p>
               <p className={`text-lg font-semibold ${data.isWhitelisted ? 'text-emerald-400' : 'text-red-400'}`}>
                 {data.isWhitelisted ? "Whitelisted" : "Not Whitelisted"}
               </p>
             </div>
-            <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-5">
-              <p className="text-xs text-white/30 uppercase tracking-wider mb-1">Status</p>
+            <div className="bg-white/[0.08] backdrop-blur-xl border border-white/[0.1] rounded-2xl p-5">
+              <p className="text-xs text-white/40 uppercase tracking-wider mb-1">Status</p>
               <p className={`text-lg font-semibold ${data.isFrozen ? 'text-red-400' : 'text-emerald-400'}`}>
                 {data.isFrozen ? "Frozen" : "Active"}
               </p>
             </div>
           </div>
 
-          <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl overflow-hidden">
-            <h2 className="text-sm font-medium text-white/60 p-5 border-b border-white/[0.06]">
+          <div className="bg-white/[0.08] backdrop-blur-xl border border-white/[0.1] rounded-2xl overflow-hidden">
+            <h2 className="text-sm font-medium text-white/70 p-5 border-b border-white/[0.06]">
               Transfer History <span className="text-white/30">({data.transfers.length})</span>
             </h2>
             {data.transfers.length === 0 ? (
