@@ -23,7 +23,7 @@ import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 const connectors = connectorsForWallets(
   [
     {
-      groupName: "Recommended",
+      groupName: " ",
       wallets: [metaMaskWallet, injectedWallet],
     },
   ],

@@ -67,54 +67,54 @@ export default function HomePage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">RWA Tokenization</h1>
-              <p className="text-lg text-gray-500 mt-1">Real World Asset on-chain management — Solana</p>
+              <h1 className="text-3xl font-bold text-gray-900">{t("home.title")}</h1>
+              <p className="text-lg text-gray-500 mt-1">{t("home.subtitleSolana")}</p>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Solana Localnet
+              {t("home.solanaLocalnet")}
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-700 mb-4">Token Overview</h2>
+              <h2 className="text-lg font-semibold text-gray-700 mb-4">{t("home.solana.tokenOverview")}</h2>
               <dl className="space-y-4">
                 <div>
-                  <dt className="text-sm text-gray-400">Standard</dt>
-                  <dd className="text-lg font-medium text-gray-900">SPL Token (Anchor)</dd>
+                  <dt className="text-sm text-gray-400">{t("home.solana.standard")}</dt>
+                  <dd className="text-lg font-medium text-gray-900">{t("home.solana.spToken")}</dd>
                 </div>
                 <div className="flex gap-10">
-                  <div><dt className="text-sm text-gray-400">Decimals</dt><dd className="text-lg text-gray-800">9</dd></div>
-                  <div><dt className="text-sm text-gray-400">Freeze</dt><dd className="text-lg text-green-600">Native</dd></div>
+                  <div><dt className="text-sm text-gray-400">{t("home.solana.decimals")}</dt><dd className="text-lg text-gray-800">9</dd></div>
+                  <div><dt className="text-sm text-gray-400">{t("home.solana.freeze")}</dt><dd className="text-lg text-green-600">{t("home.solana.native")}</dd></div>
                 </div>
-                <div><dt className="text-sm text-gray-400">Program</dt><dd className="text-sm font-mono text-blue-600 break-all">reales-rwa-solana</dd></div>
+                <div><dt className="text-sm text-gray-400">{t("home.solana.program")}</dt><dd className="text-sm font-mono text-blue-600 break-all">reales-rwa-solana</dd></div>
               </dl>
             </div>
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-700 mb-4">Compliance</h2>
+              <h2 className="text-lg font-semibold text-gray-700 mb-4">{t("home.solana.compliance")}</h2>
               <dl className="space-y-4">
                 <div className="flex gap-10">
-                  <div><dt className="text-sm text-gray-400">Whitelist</dt><dd className="text-lg text-gray-800">PDA-based</dd></div>
-                  <div><dt className="text-sm text-gray-400">Freeze</dt><dd className="text-lg text-gray-800">freeze_authority</dd></div>
+                  <div><dt className="text-sm text-gray-400">{t("home.solana.whitelist")}</dt><dd className="text-lg text-gray-800">{t("home.solana.pdaBased")}</dd></div>
+                  <div><dt className="text-sm text-gray-400">{t("home.solana.freeze")}</dt><dd className="text-lg text-gray-800">{t("home.solana.freezeAuthority")}</dd></div>
                 </div>
-                <div><dt className="text-sm text-gray-400">Access Control</dt><dd className="text-lg text-gray-800">Anchor Signer</dd></div>
-                <div><dt className="text-sm text-gray-400">Deploy</dt><dd className="text-sm font-mono text-gray-500">anchor deploy</dd></div>
+                <div><dt className="text-sm text-gray-400">{t("home.solana.accessControl")}</dt><dd className="text-lg text-gray-800">{t("home.solana.anchorSigner")}</dd></div>
+                <div><dt className="text-sm text-gray-400">{t("home.solana.deploy")}</dt><dd className="text-sm font-mono text-gray-500">anchor deploy</dd></div>
               </dl>
             </div>
           </div>
           <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-700 mb-4">How It Works</h2>
+            <h2 className="text-lg font-semibold text-gray-700 mb-4">{t("home.howItWorks")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { step: "01", title: "Init Token", desc: "Create SPL Token, set freeze_authority to program PDA" },
-                { step: "02", title: "Whitelist", desc: "On-chain PDA per address [b\"wl\", addr]" },
-                { step: "03", title: "Mint", desc: "Only whitelisted addresses can receive tokens" },
-                { step: "04", title: "Freeze/Thaw", desc: "SPL Token native freeze via program authority" },
-              ].map(({ step, title, desc }) => (
+                { step: "01", titleKey: "home.solana.step1Title", descKey: "home.solana.step1Desc" },
+                { step: "02", titleKey: "home.solana.step2Title", descKey: "home.solana.step2Desc" },
+                { step: "03", titleKey: "home.solana.step3Title", descKey: "home.solana.step3Desc" },
+                { step: "04", titleKey: "home.solana.step4Title", descKey: "home.solana.step4Desc" },
+              ].map(({ step, titleKey, descKey }) => (
                 <div key={step} className="bg-gray-50 border border-gray-100 rounded-xl p-5">
                   <span className="text-sm font-mono text-blue-500">{step}</span>
-                  <h3 className="text-lg font-semibold text-gray-800 mt-2 mb-1.5">{title}</h3>
-                  <p className="text-base text-gray-500 leading-relaxed">{desc}</p>
+                  <h3 className="text-lg font-semibold text-gray-800 mt-2 mb-1.5">{t(titleKey as any)}</h3>
+                  <p className="text-base text-gray-500 leading-relaxed">{t(descKey as any)}</p>
                 </div>
               ))}
             </div>

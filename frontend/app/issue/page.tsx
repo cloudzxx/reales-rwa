@@ -99,7 +99,7 @@ export default function IssuePage() {
           {chain === "evm" ? (
             <p className="text-lg font-mono text-blue-600 break-all">{contractOwner || t("common.loading")}</p>
           ) : (
-            <p className="text-lg text-gray-600">Any connected wallet</p>
+            <p className="text-lg text-gray-600">{t("issue.anyWallet")}</p>
           )}
         </div>
       </div>
@@ -128,7 +128,7 @@ export default function IssuePage() {
             {chain === "evm" ? (
               <p className="text-lg font-mono text-blue-600 break-all">{contractOwner || "..."}</p>
             ) : (
-              <p className="text-lg text-gray-600">Admin signer on Solana</p>
+              <p className="text-lg text-gray-600">{t("issue.solanaAdmin")}</p>
             )}
           </div>
           <div>
@@ -141,7 +141,7 @@ export default function IssuePage() {
             <>Import the owner private key into {evmAddress ? "the correct wallet" : "MetaMask"}.
               <br /><code className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded mt-2 inline-block break-all">{pk}</code></>
           ) : (
-            <>Connect the admin Phantom wallet to mint tokens on Solana.</>
+            <>{t("issue.importKeyPhantom")}</>
           )}
         </p>
       </div>
@@ -162,7 +162,7 @@ export default function IssuePage() {
             type="text"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            placeholder="0x... / Solana address"
+            placeholder={t("issue.placeholderAddress")}
             required
             className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition font-mono"
           />
@@ -203,8 +203,8 @@ export default function IssuePage() {
 
       {chain === "solana" && (
         <div className="mt-10 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Whitelist & Freeze</h2>
-          <p className="text-lg text-gray-500">Managed via Anchor program — use Solana CLI to invoke instructions.</p>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">{t("admin.whitelistFreeze")}</h2>
+          <p className="text-lg text-gray-500">{t("issue.managedByAnchor")}</p>
         </div>
       )}
 
@@ -212,14 +212,14 @@ export default function IssuePage() {
         <>
           <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Whitelist</h2>
-              <p className="text-sm text-gray-400 mb-4">Add or remove an address from the whitelist</p>
-              <WhitelistSection />
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">{t("admin.whitelist")}</h2>
+              <p className="text-sm text-gray-400 mb-4">{t("admin.whitelistDesc")}</p>
+              <WhitelistSection t={t} />
             </div>
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">Freeze</h2>
-              <p className="text-sm text-gray-400 mb-4">Freeze or unfreeze an address</p>
-              <FreezeSection />
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">{t("admin.freeze")}</h2>
+              <p className="text-sm text-gray-400 mb-4">{t("admin.freezeDesc")}</p>
+              <FreezeSection t={t} />
             </div>
           </div>
         </>
@@ -228,7 +228,7 @@ export default function IssuePage() {
   );
 }
 
-function WhitelistSection() {
+function WhitelistSection({ t }: { t: any }) {
   const [addr, setAddr] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -256,15 +256,15 @@ function WhitelistSection() {
     <div className="space-y-3">
       <input type="text" value={addr} onChange={e => setAddr(e.target.value)} placeholder="0x..." className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition font-mono" />
       <div className="flex gap-2">
-        <button onClick={() => handle("add")} disabled={loading || !addr} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Add</button>
-        <button onClick={() => handle("remove")} disabled={loading || !addr} className="flex-1 bg-red-500 hover:bg-red-400 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Remove</button>
+        <button onClick={() => handle("add")} disabled={loading || !addr} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">{t("admin.add")}</button>
+        <button onClick={() => handle("remove")} disabled={loading || !addr} className="flex-1 bg-red-500 hover:bg-red-400 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">{t("admin.remove")}</button>
       </div>
       {result && <p className={`text-base ${result.startsWith("Error") ? "text-red-600" : "text-emerald-600"}`}>{result}</p>}
     </div>
   );
 }
 
-function FreezeSection() {
+function FreezeSection({ t }: { t: any }) {
   const [addr, setAddr] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -292,8 +292,8 @@ function FreezeSection() {
     <div className="space-y-3">
       <input type="text" value={addr} onChange={e => setAddr(e.target.value)} placeholder="0x..." className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition font-mono" />
       <div className="flex gap-2">
-        <button onClick={() => handle("freeze")} disabled={loading || !addr} className="flex-1 bg-red-500 hover:bg-red-400 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Freeze</button>
-        <button onClick={() => handle("unfreeze")} disabled={loading || !addr} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">Unfreeze</button>
+        <button onClick={() => handle("freeze")} disabled={loading || !addr} className="flex-1 bg-red-500 hover:bg-red-400 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">{t("admin.freezeBtn")}</button>
+        <button onClick={() => handle("unfreeze")} disabled={loading || !addr} className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-300 text-white font-medium rounded-xl py-2.5 transition">{t("admin.unfreeze")}</button>
       </div>
       {result && <p className={`text-base ${result.startsWith("Error") ? "text-red-600" : "text-emerald-600"}`}>{result}</p>}
     </div>
