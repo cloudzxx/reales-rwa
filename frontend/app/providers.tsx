@@ -5,16 +5,30 @@ import {
   RainbowKitProvider,
   ConnectButton,
   lightTheme,
+  connectorsForWallets,
 } from "@rainbow-me/rainbowkit";
+import {
+  metaMaskWallet,
+  injectedWallet,
+} from "@rainbow-me/rainbowkit/wallets";
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { hardhat } from "wagmi/chains";
-import { injected } from "wagmi/connectors";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Link from "next/link";
 
+const connectors = connectorsForWallets(
+  [
+    {
+      groupName: "Recommended",
+      wallets: [metaMaskWallet, injectedWallet],
+    },
+  ],
+  { appName: "RWA Tokenization", projectId: "00000000" },
+);
+
 const config = createConfig({
   chains: [hardhat],
-  connectors: [injected()],
+  connectors,
   transports: {
     [hardhat.id]: http(),
   },
