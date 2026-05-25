@@ -16,17 +16,19 @@ export default function IssuePage() {
   const [error, setError] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [contractOwner, setContractOwner] = useState("");
 
   useEffect(() => {
     async function checkOwner() {
-      if (address) {
-        try {
-          const contract = getReadContract();
-          const owner = await contract.owner();
+      try {
+        const contract = getReadContract();
+        const owner = await contract.owner();
+        setContractOwner(owner);
+        if (address) {
           setIsOwner(owner.toLowerCase() === address.toLowerCase());
-        } catch {
-          setIsOwner(false);
         }
+      } catch {
+        setIsOwner(false);
       }
       setChecking(false);
     }
@@ -57,8 +59,12 @@ export default function IssuePage() {
 
   if (!isConnected) {
     return (
-      <div className="py-24 text-center">
-        <p className="text-white/40">Connect your wallet to issue tokens.</p>
+      <div className="py-24 text-center max-w-md mx-auto">
+        <p className="text-white/40 mb-4">Connect your wallet to issue tokens.</p>
+        <div className="bg-white/[0.04] border border-white/[0.1] rounded-xl p-4 text-left">
+          <p className="text-xs text-white/30 mb-1">Contract Owner</p>
+          <p className="text-sm font-mono text-blue-300/80 break-all">{contractOwner || "Loading..."}</p>
+        </div>
       </div>
     );
   }
@@ -73,9 +79,20 @@ export default function IssuePage() {
 
   if (!isOwner) {
     return (
-      <div className="py-24 text-center">
-        <p className="text-red-400/80">Only the contract owner can issue tokens.</p>
-        <p className="text-xs text-white/30 mt-2 font-mono">{address}</p>
+      <div className="py-24 text-center max-w-md mx-auto">
+        <p className="text-red-400/80 mb-2">Only the contract owner can issue tokens.</p>
+        <div className="bg-white/[0.04] border border-white/[0.1] rounded-xl p-4 text-left">
+          <p className="text-xs text-white/30 mb-1">Contract Owner</p>
+          <p className="text-sm font-mono text-blue-300/80 break-all">{contractOwner || "Loading..."}</p>
+          <p className="text-xs text-white/30 mt-3">Your connected address</p>
+          <p className="text-sm font-mono text-white/60 break-all">{address}</p>
+        </div>
+        <p className="text-xs text-white/30 mt-4">
+          Import the owner private key into MetaMask to continue.
+          {contractOwner === "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266" && (
+            <> Default key: <code className="text-blue-300">0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80</code></>
+          )}
+        </p>
       </div>
     );
   }
