@@ -1,10 +1,19 @@
 """AI 合规 Agent 主控制器 — 编排数据获取、分析、报告生成全流程"""
 import os
 import json
+import time
+import asyncio
+import logging
 from typing import Dict, List
 from web3 import Web3
 from langchain_openai import ChatOpenAI
-from langchain_core.output_parsers import StrOutputParser
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger("agent")
 
 from fetcher.evm import EVMFetcher
 from fetcher.solana import SolanaFetcher
@@ -30,27 +39,35 @@ class ComplianceAgent:
         self.rule_engine = RuleEngine()
 
         self.llm = None
-        api_key = os.getenv("DEEPSEEK_API_KEY")
+        api_key = os.getenv("MINIMAX_API_KEY")
         if api_key and api_key != "":
             self.llm = ChatOpenAI(
-                model="deepseek-chat",
+                model=os.getenv("LLM_MODEL", "MiniMax-M2.7"),
                 temperature=0.0,
                 api_key=api_key,
-                base_url="https://api.deepseek.com",
+                base_url="https://api.minimax.chat/v1",
+                timeout=60,
+                max_retries=0,
             )
 
     # ── EVM 分析 ──
 
     async def analyze(self, address: str, contract_address: str, max_blocks: int = 0) -> dict:
+        t_start = time.time()
         audit: List[Dict] = []
+        logger.info(f"Analyze EVM addr={address[:14]}... contract={contract_address[:14]}...")
 
         # 1. 获取交易数据（外部 RPC 限制区块范围）
+        t0 = time.time()
         txs = self.evm_fetcher.get_transfers(address, contract_address, max_blocks=max_blocks)
+        logger.info(f"  fetch: {len(txs)} txs in {time.time()-t0:.2f}s")
         if not txs:
             audit.append({"stage": "fetcher", "status": "no_data", "detail": "No transfers found"})
+            logger.info(f"  done: no transfers (total {time.time()-t_start:.1f}s)")
             return self._build_empty_response(address, audit)
 
         # 2. 资金流向追踪
+        t0 = time.time()
         flow = self.flow_tracer.trace(address, contract_address)
         all_addresses = list(set(
             [n["address"] for n in flow["nodes"]]
@@ -58,9 +75,11 @@ class ComplianceAgent:
             + [e["to"] for e in flow["edges"]]
         ))
         labels = self.profiler.profile_addresses(all_addresses)
+        logger.info(f"  flow: {len(flow['nodes'])} nodes depth={flow['max_depth']} in {time.time()-t0:.2f}s")
         audit.append({"stage": "fund_flow", "status": "ok", "detail": f"Traced {len(flow['nodes'])} nodes at depth {flow['max_depth']}"})
 
         # 3. 规则引擎
+        t0 = time.time()
         counterparties = list(set(e["to"] for e in flow["edges"]) | set(e["from"] for e in flow["edges"]))
         stats = {
             "tx_count": len(txs),
@@ -69,12 +88,16 @@ class ComplianceAgent:
             "total_received": flow["total_received"],
         }
         triggers = self.rule_engine.evaluate(txs, counterparties, stats)
+        logger.info(f"  rules: {len(triggers)} triggers in {time.time()-t0:.3f}s")
         audit.append({"stage": "rule_engine", "status": "ok", "detail": f"Triggered: {len(triggers)} rules"})
 
         # 4. 多维风险评分
+        t0 = time.time()
         risk_dims = compute_multi_dimension_risk(flow, labels, stats)
+        logger.info(f"  risk_dims: {len(risk_dims)} dimensions in {time.time()-t0:.3f}s")
 
         # 5. LLM 分析
+        t0 = time.time()
         llm_result = await self._run_llm_analysis(
             address=address,
             txs=txs,
@@ -85,21 +108,28 @@ class ComplianceAgent:
             risk_dims=risk_dims,
             currency="ETH",
         )
+        llm_elapsed = time.time() - t0
+        audit.append({"stage": "llm_analysis", "status": "ok", "detail": f"LLM in {llm_elapsed:.1f}s"})
 
         # 6. 生成结构化报告
-        audit.append({"stage": "llm_analysis", "status": "ok", "detail": "LLM analysis completed"})
         report = generate_structured_report(address, "ethereum", llm_result, flow, labels, audit)
-
+        total = time.time() - t_start
+        logger.info(f"  done: total={total:.1f}s score={llm_result.get('risk_score','?')}")
         return report
 
     # ── Solana 分析 ──
 
     async def analyze_solana(self, address: str) -> dict:
+        t_start = time.time()
         audit: List[Dict] = []
+        logger.info(f"Analyze Solana addr={address[:14]}...")
 
+        t0 = time.time()
         cp_list = self.solana_fetcher.get_counterparties(address)
+        logger.info(f"  fetch: {len(cp_list)} counterparties in {time.time()-t0:.2f}s")
         if not cp_list:
             audit.append({"stage": "fetcher", "status": "no_data", "detail": "No activity found"})
+            logger.info(f"  done: no activity (total {time.time()-t_start:.1f}s)")
             return self._build_empty_response(address, audit)
 
         labels = {}
@@ -111,6 +141,7 @@ class ComplianceAgent:
         stats = {"tx_count": sum(c["interactions"] for c in cp_list), "counterparties": len(cp_list)}
         audit.append({"stage": "fetcher", "status": "ok", "detail": f"Found {len(cp_list)} counterparties"})
 
+        t0 = time.time()
         llm_result = await self._run_llm_analysis(
             address=address,
             txs=[],
@@ -124,9 +155,12 @@ class ComplianceAgent:
             solana_cp_list=cp_list,
             solana_flow=flow_lines,
         )
+        llm_elapsed = time.time() - t0
+        audit.append({"stage": "llm_analysis", "status": "ok", "detail": f"LLM in {llm_elapsed:.1f}s"})
 
-        audit.append({"stage": "llm_analysis", "status": "ok", "detail": "LLM analysis completed"})
         report = generate_structured_report(address, "solana", llm_result, {"nodes": [], "edges": []}, labels, audit)
+        total = time.time() - t_start
+        logger.info(f"  done: total={total:.1f}s score={llm_result.get('risk_score','?')}")
         return report
 
     # ── LLM 调用 ──
@@ -145,69 +179,110 @@ class ComplianceAgent:
         solana_cp_list: List[Dict] = None,
         solana_flow: str = "",
     ) -> dict:
-        if use_llm_only and self.llm:
-            # Solana: 只用 LLM
-            result = await self._call_llm({
-                "address": address,
-                "tx_count": stats.get("tx_count", 0),
-                "counterparties": stats.get("counterparties", 0),
-                "total_received": "N/A",
-                "total_sent": "N/A",
-                "max_tx_value": "N/A",
-                "flow_graph": "Solana flow data:\n" + solana_flow,
-                "labels": "No known labels",
-                "sample_txs": "",
-                "rule_triggers": "None",
-                "currency": "SOL",
-                "trace_depth": 1,
-            })
-            return self._parse_llm_result(result, risk_dims)
+        try:
+            if use_llm_only and self.llm:
+                result, meta = await self._call_llm({
+                    "address": address,
+                    "tx_count": stats.get("tx_count", 0),
+                    "counterparties": stats.get("counterparties", 0),
+                    "total_received": "N/A",
+                    "total_sent": "N/A",
+                    "max_tx_value": "N/A",
+                    "flow_graph": "Solana flow data:\n" + solana_flow,
+                    "labels": "No known labels",
+                    "sample_txs": "",
+                    "rule_triggers": "None",
+                    "currency": "SOL",
+                    "trace_depth": 1,
+                })
+                parsed = self._parse_llm_result(result, risk_dims)
+                logger.info(f"LLM OK [Solana] {meta}")
+                return parsed
 
-        if self.llm:
-            # 格式化数据
-            flow_graph = self.flow_tracer.format_flow_for_llm(flow)
-            label_text = self.profiler.format_labels_for_llm(labels)
-            sample_txs = "\n".join(
-                f"  {tx['hash'][:10]}...: {tx['from'][:8]}..->{tx['to'][:8]}.. = {tx['value_eth']:.4f}"
-                for tx in sorted(txs, key=lambda x: x["block"], reverse=True)[:10]
-            )
-            trigger_text = "\n".join(f"  - {t['rule']}: {t['detail']}" for t in triggers) if triggers else "None"
+            if self.llm:
+                flow_graph = self.flow_tracer.format_flow_for_llm(flow)
+                label_text = self.profiler.format_labels_for_llm(labels)
+                sample_txs = "\n".join(
+                    f"  {tx['hash'][:10]}...: {tx['from'][:8]}..->{tx['to'][:8]}.. = {tx['value_eth']:.4f}"
+                    for tx in sorted(txs, key=lambda x: x["block"], reverse=True)[:10]
+                )
+                trigger_text = "\n".join(f"  - {t['rule']}: {t['detail']}" for t in triggers) if triggers else "None"
 
-            result = await self._call_llm({
-                "address": address,
-                "tx_count": stats["tx_count"],
-                "counterparties": stats["counterparties"],
-                "total_received": stats.get("total_received", 0),
-                "total_sent": stats.get("total_sent", 0),
-                "max_tx_value": max((tx["value_eth"] for tx in txs), default=0),
-                "flow_graph": flow_graph,
-                "labels": label_text,
-                "sample_txs": sample_txs,
-                "rule_triggers": trigger_text,
-                "currency": currency,
-                "trace_depth": flow.get("max_depth", 1),
-            })
-            return self._parse_llm_result(result, risk_dims)
+                result, meta = await self._call_llm({
+                    "address": address,
+                    "tx_count": stats["tx_count"],
+                    "counterparties": stats["counterparties"],
+                    "total_received": stats.get("total_received", 0),
+                    "total_sent": stats.get("total_sent", 0),
+                    "max_tx_value": max((tx["value_eth"] for tx in txs), default=0),
+                    "flow_graph": flow_graph,
+                    "labels": label_text,
+                    "sample_txs": sample_txs,
+                    "rule_triggers": trigger_text,
+                    "currency": currency,
+                    "trace_depth": flow.get("max_depth", 1),
+                })
+                parsed = self._parse_llm_result(result, risk_dims)
+                logger.info(f"LLM OK [EVM] {meta}")
+                return parsed
+        except Exception as e:
+            logger.warning(f"LLM error, fallback to rule engine: {e}")
 
-        # 无 LLM 回退
+        logger.info("LLM unavailable, using rule engine fallback")
         return self._fallback_llm_result(address, stats, risk_dims, currency)
 
-    async def _call_llm(self, variables: dict) -> str:
-        chain = STRUCTURED_ANALYSIS_PROMPT | self.llm | StrOutputParser()
-        return await chain.ainvoke(variables)
+    async def _call_llm(self, variables: dict) -> tuple:
+        messages = STRUCTURED_ANALYSIS_PROMPT.format_messages(**variables)
+        t0 = time.time()
+        response = await asyncio.wait_for(self.llm.ainvoke(messages), timeout=120)
+        elapsed = time.time() - t0
+
+        usage = {}
+        meta = getattr(response, "response_metadata", {}) or {}
+        if meta:
+            usage = meta.get("token_usage") or meta.get("usage") or {}
+        elif hasattr(response, "usage_metadata") and response.usage_metadata:
+            usage = response.usage_metadata
+
+        tokens = ""
+        if usage:
+            pt = usage.get("prompt_tokens") or usage.get("input_tokens") or 0
+            ct = usage.get("completion_tokens") or usage.get("output_tokens") or 0
+            tt = usage.get("total_tokens") or 0
+            tokens = f"in={pt} out={ct} total={tt}"
+
+        result = response.content if hasattr(response, "content") else str(response)
+        logger.info(f"LLM call duration={elapsed:.1f}s {tokens}")
+        return result, tokens or f"duration={elapsed:.1f}s"
 
     def _parse_llm_result(self, raw: str, risk_dims: dict) -> dict:
         try:
+            import re
+            json_match = re.search(r'\{.*\}', raw, re.DOTALL)
+            if json_match:
+                raw = json_match.group()
             parsed = json.loads(raw)
             if risk_dims and not parsed.get("risk_dimensions"):
                 parsed["risk_dimensions"] = risk_dims
+            if not parsed.get("structured_report"):
+                parsed["structured_report"] = {
+                    "overview": parsed.get("summary", "Analysis completed"),
+                    "risk_assessment": f"Score: {parsed.get('risk_score', 30)}/100",
+                    "recommendations": parsed.get("recommended_action", "monitor"),
+                }
             return parsed
         except (json.JSONDecodeError, ValueError):
+            risk = min(100, max(5, 0))
             return {
                 "risk_score": 30,
                 "risk_level": "medium",
                 "risk_dimensions": risk_dims or {},
-                "structured_report": {},
+                "structured_report": {
+                    "overview": "LLM analysis failed — using rule engine assessment",
+                    "fund_flow_analysis": "See fund flow section for details",
+                    "risk_assessment": f"Automated risk: {risk}/100",
+                    "recommendations": "Review API key or try again later",
+                },
                 "unusual_tx": [],
                 "summary": "LLM analysis failed — using fallback assessment",
                 "recommended_action": "review",

@@ -59,10 +59,11 @@ def generate_structured_report(
         },
         "triggers": llm_result.get("triggers", []),
         "audit_trail": [
-            {"step": step["stage"], "result": step["status"], "detail": step["detail"]}
+            {"stage": step["stage"], "status": step["status"], "detail": step["detail"]}
             for step in audit_steps
         ],
         "unusual_tx": llm_result.get("unusual_tx", []),
+        "summary": llm_result.get("summary", ""),
     }
 
     return report

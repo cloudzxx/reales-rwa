@@ -67,7 +67,7 @@ services:
     environment:
       - RPC_URL=http://hardhat:8545
       - SOLANA_RPC_URL=http://solana-validator:8899
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - MINIMAX_API_KEY=${MINIMAX_API_KEY:-}
 
 volumes:
   generated:
