@@ -48,12 +48,19 @@ export default function QueryPage() {
           0,
         );
         const tokens = json.tokens || [];
+        const rawTransfers = json.transfers || [];
         setData({
           address: json.address,
           balance: totalBalance.toFixed(4),
           isWhitelisted: true,
           isFrozen: tokens.some((t: any) => t.isFrozen),
-          transfers: [],
+          transfers: rawTransfers.map((tx: any) => ({
+            from: "",
+            to: "",
+            value: "0",
+            hash: tx.signature,
+            blockNumber: tx.slot,
+          })),
         });
       } else {
         setData(json);
