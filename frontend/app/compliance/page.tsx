@@ -107,9 +107,9 @@ export default function CompliancePage() {
   const [extContract, setExtContract] = useState("");
 
   // 统一提取风险评分
-  const riskScore = report?.risk_assessment?.overall_score ?? report?.risk_score ?? 0;
-  const riskLevel = report?.risk_assessment?.level ?? report?.risk_level ?? "low";
-  const dims = report?.risk_assessment?.dimensions ?? report?.risk_dimensions ?? {};
+  const riskScore = (report?.risk_assessment?.overall_score || report?.risk_score || 0) as number;
+  const riskLevel = report?.risk_assessment?.level || report?.risk_level || "low";
+  const dims = report?.risk_assessment?.dimensions || report?.risk_dimensions || {};
 
   async function handleAnalyze(e: React.FormEvent) {
     e.preventDefault();
