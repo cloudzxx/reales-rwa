@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSolanaConnection } from "@/lib/solana/provider";
 import {
-  PublicKey, Keypair, LAMPORTS_PER_SOL,
+  PublicKey, Keypair, LAMPORTS_PER_SOL, Connection,
 } from "@solana/web3.js";
 import {
   createMint, createAssociatedTokenAccountIdempotent,
-  mintTo, getOrCreateAssociatedTokenAccount,
+  mintTo,
 } from "@solana/spl-token";
 
 // 测试用 payer（持久化在模块级，避免重复创建）
 let payerKeypair: Keypair | null = null;
 let mintPubkey: PublicKey | null = null;
 
-async function ensurePayer(connection: Awaited<ReturnType<typeof getSolanaConnection>>): Promise<Keypair> {
+async function ensurePayer(connection: Connection): Promise<Keypair> {
   if (!payerKeypair) {
     payerKeypair = Keypair.generate();
   }
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     });
 
     // 获取交易签名
-    let transfers: Array<{ signature: string; slot: number; blockTime: number | null }> = [];
+    let transfers: Array<{ signature: string; slot: number; blockTime: number | null | undefined }> = [];
     try {
       const sigs = await connection.getSignaturesForAddress(pubkey, { limit: 20 });
       transfers = sigs.map(s => ({
