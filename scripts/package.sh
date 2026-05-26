@@ -39,9 +39,9 @@ echo "# 2. 服务器上解压"
 echo "ssh root@your-server"
 echo "mkdir -p ~/reales-rwa && tar xzf ${OUTPUT} -C ~/reales-rwa"
 echo ""
-echo "# 3. 加载镜像（逐个加载）"
+echo "# 3. 加载镜像"
 echo "cd ~/reales-rwa"
-echo 'for f in images/*.tar.gz; do echo "Loading $f..." && gunzip -c "$f" | docker load; done'
+echo 'for f in images/*.tar.gz; do docker load -i "$f"; done'
 echo ""
 echo "# 4. 配置环境变量"
 echo "cp .env .env.local  # 编辑 DEEPSEEK_API_KEY 等"
