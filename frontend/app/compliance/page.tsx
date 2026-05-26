@@ -50,9 +50,10 @@ interface AuditStep {
 }
 
 interface ComplianceReport {
-  risk_score: number;
-  risk_level: string;
-  behavior_profile: string;
+  // New format from structured report generator
+  risk_assessment?: { overall_score: number; level: string; dimensions?: Record<string, RiskDimension> };
+  risk_score?: number;  // backward compat
+  risk_level?: string;  // backward compat
   risk_dimensions?: Record<string, RiskDimension>;
   fund_flow?: FundFlow;
   structured_report?: StructuredReport;
@@ -101,6 +102,14 @@ export default function CompliancePage() {
   const [report, setReport] = useState<ComplianceReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [useExternal, setUseExternal] = useState(false);
+  const [extRpc, setExtRpc] = useState("");
+  const [extContract, setExtContract] = useState("");
+
+  // 统一提取风险评分
+  const riskScore = report?.risk_assessment?.overall_score ?? report?.risk_score ?? 0;
+  const riskLevel = report?.risk_assessment?.level ?? report?.risk_level ?? "low";
+  const dims = report?.risk_assessment?.dimensions ?? report?.risk_dimensions ?? {};
 
   async function handleAnalyze(e: React.FormEvent) {
     e.preventDefault();
@@ -109,9 +118,14 @@ export default function CompliancePage() {
     setError(null);
     setReport(null);
     try {
+      const body: any = { address: addr, chain };
+      if (useExternal) {
+        if (extRpc) body.rpc_url = extRpc;
+        if (extContract) body.contract_address = extContract;
+      }
       const res = await fetch("/api/compliance/report", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: addr, chain }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -126,13 +140,25 @@ export default function CompliancePage() {
         <h1 className="text-3xl font-bold text-gray-900">{t("compliance.title")}</h1>
         <p className="text-lg text-gray-500 mt-1">{t("compliance.subtitle")}</p>
       </div>
-      <form onSubmit={handleAnalyze} className="flex gap-3 mb-6 max-w-2xl">
+      <form onSubmit={handleAnalyze} className="flex gap-3 mb-4 max-w-2xl">
         <input type="text" value={addr} onChange={e => setAddr(e.target.value)} placeholder={t("compliance.placeholder")}
           className="flex-1 bg-white border border-gray-300 rounded-xl px-4 py-3 text-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition font-mono" />
         <button type="submit" disabled={loading} className="bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500 disabled:bg-gray-300 text-white font-semibold rounded-xl px-8 py-3 text-lg transition-all">
           {loading ? t("compliance.analyzing") : t("compliance.analyze")}
         </button>
       </form>
+
+      {/* Network Switch */}
+      <div className="flex items-center gap-4 mb-6 text-sm">
+        <button onClick={() => setUseExternal(false)} className={`px-3 py-1.5 rounded-lg transition ${!useExternal ? "bg-blue-100 text-blue-700 font-medium" : "bg-gray-100 text-gray-500"}`}>Local Network</button>
+        <button onClick={() => setUseExternal(true)} className={`px-3 py-1.5 rounded-lg transition ${useExternal ? "bg-blue-100 text-blue-700 font-medium" : "bg-gray-100 text-gray-500"}`}>External RPC</button>
+        {useExternal && (
+          <div className="flex gap-2 flex-1">
+            <input type="text" value={extRpc} onChange={e => setExtRpc(e.target.value)} placeholder="RPC URL (https://...)" className="flex-1 px-2 py-1 text-xs border rounded" />
+            <input type="text" value={extContract} onChange={e => setExtContract(e.target.value)} placeholder="Contract address" className="flex-1 px-2 py-1 text-xs border rounded font-mono" />
+          </div>
+        )}
+      </div>
       {error && <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-red-600 text-lg mb-6">{error}</div>}
 
       {report && (
@@ -142,30 +168,35 @@ export default function CompliancePage() {
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-4">
                 <div><p className="text-sm text-gray-400 mb-1">{t("compliance.riskScore")}</p>
-                  <span className="text-3xl font-bold">{report.risk_score}</span>
+                  <span className="text-3xl font-bold">{riskScore}</span>
                   <span className="text-lg text-gray-400">/100</span>
                 </div>
                 <div className="w-36 h-3 bg-gray-100 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${report.risk_score >= 70 ? "bg-red-500" : report.risk_score >= 40 ? "bg-yellow-500" : "bg-green-500"}`}
-                    style={{ width: `${report.risk_score}%` }} />
+                  <div                   className={`h-full rounded-full ${riskScore >= 70 ? "bg-red-500" : riskScore >= 40 ? "bg-yellow-500" : "bg-green-500"}`}
+                    style={{ width: `${riskScore}%` }} />
                 </div>
-                <span className="text-sm uppercase font-bold text-gray-500">{report.risk_level}</span>
+                <span className="text-sm uppercase font-bold text-gray-500">{riskLevel}</span>
               </div>
-              {report.recommended_action && (
+              {report.recommendation?.action ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-400">Recommended:</span>
+                  {actionBadge(report.recommendation.action || report.recommended_action || "monitor")}
+                </div>
+              ) : report.recommended_action ? (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-400">Recommended:</span>
                   {actionBadge(report.recommended_action)}
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
 
           {/* 四维风险评分 */}
-          {report.risk_dimensions && Object.keys(report.risk_dimensions).length > 0 && (
+          {Object.keys(dims).length > 0 ? (
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
               <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Multi-Dimension Risk Assessment</h3>
               <div className="space-y-3">
-                {Object.entries(report.risk_dimensions).map(([key, dim]) => (
+                {Object.entries(dims).map(([key, dim]) => (
                   <div key={key} className="flex items-center gap-3">
                     <span className="w-36 text-sm font-medium text-gray-700">
                       {key === "fund_source_risk" ? "Fund Source" : key === "behavior_risk" ? "Behavior" : key === "counterparty_risk" ? "Counterparty" : "Regulatory"}

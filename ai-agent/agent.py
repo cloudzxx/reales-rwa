@@ -41,11 +41,11 @@ class ComplianceAgent:
 
     # ── EVM 分析 ──
 
-    async def analyze(self, address: str, contract_address: str) -> dict:
+    async def analyze(self, address: str, contract_address: str, max_blocks: int = 0) -> dict:
         audit: List[Dict] = []
 
-        # 1. 获取交易数据
-        txs = self.evm_fetcher.get_transfers(address, contract_address)
+        # 1. 获取交易数据（外部 RPC 限制区块范围）
+        txs = self.evm_fetcher.get_transfers(address, contract_address, max_blocks=max_blocks)
         if not txs:
             audit.append({"stage": "fetcher", "status": "no_data", "detail": "No transfers found"})
             return self._build_empty_response(address, audit)
