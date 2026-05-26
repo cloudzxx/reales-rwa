@@ -130,8 +130,11 @@ export default function CompliancePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setReport(data);
-    } catch (err: any) { setError(err.message); }
-    finally { setLoading(false); }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
