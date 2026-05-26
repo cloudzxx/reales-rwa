@@ -50,9 +50,9 @@ Be specific about flow patterns. If data is limited, mark risk_level as "low" wi
 Transaction stats:
 - Total transactions: {tx_count}
 - Unique counterparties: {counterparties}
-- Total received: {total_received} ETH
-- Total sent: {total_sent} ETH
-- Max single tx: {max_tx_value} ETH
+- Total received: {total_received} {currency}
+- Total sent: {total_sent} {currency}
+- Max single tx: {max_tx_value} {currency}
 
 Recent transactions (newest first):
 {sample_txs}
@@ -76,7 +76,7 @@ class ComplianceAgent:
                 base_url="https://api.deepseek.com",
             )
 
-    async def analyze(self, address: str, contract_address: str) -> dict:
+    async def analyze(self, address: str, contract_address: str, currency: str = "ETH") -> dict:
         address = self.w3.to_checksum_address(address)
         contract_address = self.w3.to_checksum_address(contract_address)
 
@@ -169,13 +169,16 @@ class ComplianceAgent:
                     **stats,
                     "sample_txs": sample_txs,
                     "flow_data": flow_data,
+                    "currency": currency,
                 })
                 parsed = json.loads(result)
                 return self._merge_llm_result(parsed, fund_flow, txs_sorted[:10])
             except (json.JSONDecodeError, ValueError):
-                return self._fallback_analysis(address, stats, fund_flow, txs_sorted[:10])
+                return self._fallback_analysis(address, stats, fund_flow, txs_sorted[:10], currency)
+            except (json.JSONDecodeError, ValueError):
+                return self._fallback_analysis(address, stats, fund_flow, txs_sorted[:10], currency)
         else:
-            return self._fallback_analysis(address, stats, fund_flow, txs_sorted[:10])
+            return self._fallback_analysis(address, stats, fund_flow, txs_sorted[:10], currency)
 
     def _trace_fund_flow(self, address: str, contract_address: str, counterparties: Dict[str, Dict[str, float]]) -> Dict:
         """追踪一级资金流向：获取每个对手方的交易统计"""
@@ -290,11 +293,12 @@ class ComplianceAgent:
                     "address": address,
                     "tx_count": tx_count,
                     "counterparties": len(cp_list),
-                    "total_received": "N/A (Solana)",
-                    "total_sent": "N/A (Solana)",
-                    "max_tx_value": "N/A (Solana)",
+                    "total_received": "N/A",
+                    "total_sent": "N/A",
+                    "max_tx_value": "N/A",
                     "sample_txs": "\n".join(s["signature"] for s in sigs[:10]),
                     "flow_data": flow_lines,
+                    "currency": "SOL",
                 })
                 try:
                     parsed = json.loads(result)
@@ -336,7 +340,7 @@ class ComplianceAgent:
         except Exception as e:
             return self._error_response(f"Solana query failed: {str(e)}")
 
-    def _fallback_analysis(self, address: str, stats: dict, fund_flow: dict, txs: list) -> dict:
+    def _fallback_analysis(self, address: str, stats: dict, fund_flow: dict, txs: list, currency: str = "ETH") -> dict:
         risk = min(100, max(5, stats["tx_count"] * 5 + stats["counterparties"] * 3))
         unusual = [tx["hash"] for tx in txs if tx.get("value", 0) > 100][:5]
 
@@ -348,11 +352,11 @@ class ComplianceAgent:
                 "total_sent": stats.get("total_sent", 0),
                 "total_received": stats.get("total_received", 0),
                 "top_counterparties": fund_flow.get("counterparties", [])[:5],
-                "flow_summary": f"{stats['counterparties']} counterparties, volume {stats.get('total_received', 0) + stats.get('total_sent', 0)} ETH",
+                "flow_summary": f"{stats['counterparties']} counterparties, volume {stats.get('total_received', 0) + stats.get('total_sent', 0)} {currency}",
             },
             "structured_report": {
                 "overview": f"Address with {stats['tx_count']} transactions",
-                "fund_flow_analysis": f"Interacted with {stats['counterparties']} unique addresses. Total volume: {stats.get('total_received', 0) + stats.get('total_sent', 0)} ETH",
+                "fund_flow_analysis": f"Interacted with {stats['counterparties']} unique addresses. Total volume: {stats.get('total_received', 0) + stats.get('total_sent', 0)} {currency}",
                 "risk_assessment": f"Automated risk score: {risk}/100 based on activity metrics",
                 "recommendations": "Use LLM API key for detailed AI analysis",
             },
