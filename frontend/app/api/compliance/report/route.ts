@@ -50,35 +50,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-    // 根据链选择对应的 AI Agent 端点
-    const endpoint = chain === "solana" ? "/analyze/solana" : "/analyze/address";
-
-    const { CONTRACT_ADDRESS } = await import("@/lib/deployment");
-
-    const res = await fetch(`${AI_AGENT_URL}${endpoint}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: chain === "solana"
-        ? JSON.stringify({ address })
-        : JSON.stringify({ address, contract_address: CONTRACT_ADDRESS }),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      return NextResponse.json(
-        { error: `AI Agent error: ${text}` },
-        { status: 502 }
-      );
-    }
-
-    // 将 AI Agent 的响应直接返回给前端
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch (err: any) {
-    console.error("Compliance report error:", err);
-    return NextResponse.json(
-      { error: err.message || "Failed to get compliance report" },
-      { status: 500 }
-    );
-  }
-}
