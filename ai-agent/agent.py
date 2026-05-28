@@ -17,7 +17,7 @@ logger = logging.getLogger("agent")
 
 from fetcher.evm import EVMFetcher
 from fetcher.solana import SolanaFetcher
-from analyzer.fund_flow import FundFlowTracer
+from analyzer.fund_flow import FundFlowTracer, build_flow_graph
 from analyzer.profiler import AddressProfiler
 from analyzer.risk import compute_multi_dimension_risk
 from report.structured import generate_structured_report
@@ -124,41 +124,62 @@ class ComplianceAgent:
         audit: List[Dict] = []
         logger.info(f"Analyze Solana addr={address[:14]}...")
 
+        # 1. 获取 SPL Token 转账
         t0 = time.time()
-        cp_list = self.solana_fetcher.get_counterparties(address)
-        logger.info(f"  fetch: {len(cp_list)} counterparties in {time.time()-t0:.2f}s")
-        if not cp_list:
-            audit.append({"stage": "fetcher", "status": "no_data", "detail": "No activity found"})
+        txs = self.solana_fetcher.get_token_transfers(address)
+        logger.info(f"  fetch: {len(txs)} token transfers in {time.time()-t0:.2f}s")
+        if not txs:
+            audit.append({"stage": "fetcher", "status": "no_data", "detail": "No SPL Token transfers found"})
             logger.info(f"  done: no activity (total {time.time()-t_start:.1f}s)")
             return self._build_empty_response(address, audit)
 
-        labels = {}
-        flow_lines = "\n".join(
-            f"  {c['address'][:14]}...: {c['interactions']} interactions"
-            for c in cp_list
-        )
+        # 2. 资金流向追踪
+        t0 = time.time()
+        flow = build_flow_graph(address, txs)
+        all_addresses = list(set(
+            [n["address"] for n in flow["nodes"]]
+            + [e["from"] for e in flow["edges"]]
+            + [e["to"] for e in flow["edges"]]
+        ))
+        labels = self.profiler.profile_addresses(all_addresses)
+        logger.info(f"  flow: {len(flow['nodes'])} nodes in {time.time()-t0:.2f}s")
+        audit.append({"stage": "fund_flow", "status": "ok", "detail": f"Traced {len(flow['nodes'])} nodes"})
 
-        stats = {"tx_count": sum(c["interactions"] for c in cp_list), "counterparties": len(cp_list)}
-        audit.append({"stage": "fetcher", "status": "ok", "detail": f"Found {len(cp_list)} counterparties"})
+        # 3. 规则引擎
+        t0 = time.time()
+        counterparties = list(set(e["to"] for e in flow["edges"]) | set(e["from"] for e in flow["edges"]))
+        stats = {
+            "tx_count": len(txs),
+            "counterparties": len(counterparties),
+            "total_sent": flow["total_sent"],
+            "total_received": flow["total_received"],
+        }
+        triggers = self.rule_engine.evaluate(txs, counterparties, stats)
+        logger.info(f"  rules: {len(triggers)} triggers in {time.time()-t0:.3f}s")
+        audit.append({"stage": "rule_engine", "status": "ok", "detail": f"Triggered: {len(triggers)} rules"})
 
+        # 4. 多维风险评分
+        t0 = time.time()
+        risk_dims = compute_multi_dimension_risk(flow, labels, stats)
+        logger.info(f"  risk_dims: {len(risk_dims)} dimensions in {time.time()-t0:.3f}s")
+
+        # 5. LLM 分析
         t0 = time.time()
         llm_result = await self._run_llm_analysis(
             address=address,
-            txs=[],
-            flow={"nodes": [], "edges": [], "max_depth": 1},
+            txs=txs,
+            flow=flow,
             labels=labels,
             stats=stats,
-            triggers=[],
-            risk_dims={},
+            triggers=triggers,
+            risk_dims=risk_dims,
             currency="SOL",
-            use_llm_only=True,
-            solana_cp_list=cp_list,
-            solana_flow=flow_lines,
         )
         llm_elapsed = time.time() - t0
         audit.append({"stage": "llm_analysis", "status": "ok", "detail": f"LLM in {llm_elapsed:.1f}s"})
 
-        report = generate_structured_report(address, "solana", llm_result, {"nodes": [], "edges": []}, labels, audit)
+        # 6. 生成结构化报告
+        report = generate_structured_report(address, "solana", llm_result, flow, labels, audit)
         total = time.time() - t_start
         logger.info(f"  done: total={total:.1f}s score={llm_result.get('risk_score','?')}")
         return report
@@ -175,36 +196,15 @@ class ComplianceAgent:
         triggers: List[Dict],
         risk_dims: dict,
         currency: str,
-        use_llm_only: bool = False,
-        solana_cp_list: List[Dict] = None,
-        solana_flow: str = "",
     ) -> dict:
         try:
-            if use_llm_only and self.llm:
-                result, meta = await self._call_llm({
-                    "address": address,
-                    "tx_count": stats.get("tx_count", 0),
-                    "counterparties": stats.get("counterparties", 0),
-                    "total_received": "N/A",
-                    "total_sent": "N/A",
-                    "max_tx_value": "N/A",
-                    "flow_graph": "Solana flow data:\n" + solana_flow,
-                    "labels": "No known labels",
-                    "sample_txs": "",
-                    "rule_triggers": "None",
-                    "currency": "SOL",
-                    "trace_depth": 1,
-                })
-                parsed = self._parse_llm_result(result, risk_dims)
-                logger.info(f"LLM OK [Solana] {meta}")
-                return parsed
-
             if self.llm:
                 flow_graph = self.flow_tracer.format_flow_for_llm(flow)
                 label_text = self.profiler.format_labels_for_llm(labels)
+                value_key = "value_eth" if currency == "ETH" else "value"
                 sample_txs = "\n".join(
-                    f"  {tx['hash'][:10]}...: {tx['from'][:8]}..->{tx['to'][:8]}.. = {tx['value_eth']:.4f}"
-                    for tx in sorted(txs, key=lambda x: x["block"], reverse=True)[:10]
+                    f"  {tx['hash'][:10]}...: {tx['from'][:8]}..->{tx['to'][:8]}.. = {tx.get(value_key, tx.get('value', 0)):.4f}"
+                    for tx in sorted(txs, key=lambda x: x.get("block") or x.get("slot", 0), reverse=True)[:10]
                 )
                 trigger_text = "\n".join(f"  - {t['rule']}: {t['detail']}" for t in triggers) if triggers else "None"
 
@@ -214,7 +214,7 @@ class ComplianceAgent:
                     "counterparties": stats["counterparties"],
                     "total_received": stats.get("total_received", 0),
                     "total_sent": stats.get("total_sent", 0),
-                    "max_tx_value": max((tx["value_eth"] for tx in txs), default=0),
+                    "max_tx_value": max((tx.get(value_key, tx.get("value", 0)) for tx in txs), default=0),
                     "flow_graph": flow_graph,
                     "labels": label_text,
                     "sample_txs": sample_txs,
@@ -223,7 +223,7 @@ class ComplianceAgent:
                     "trace_depth": flow.get("max_depth", 1),
                 })
                 parsed = self._parse_llm_result(result, risk_dims)
-                logger.info(f"LLM OK [EVM] {meta}")
+                logger.info(f"LLM OK [{currency}] {meta}")
                 return parsed
         except Exception as e:
             logger.warning(f"LLM error, fallback to rule engine: {e}")

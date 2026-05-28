@@ -1,6 +1,68 @@
 """资金流向追踪 — 构建有向图，支持递归追踪"""
-from typing import Dict, List, Set, Any
+from typing import Dict, List, Set, Any, Callable
 from fetcher.evm import EVMFetcher
+
+
+def build_flow_graph(
+    address: str,
+    transfers: List[Dict],
+) -> Dict[str, Any]:
+    """从转账记录构建资金流向图（链无关）"""
+    nodes: List[Dict] = []
+    edges: List[Dict] = []
+    counterparty_flows: Dict[str, Dict[str, float]] = {}
+    total_sent = 0.0
+    total_received = 0.0
+    addr_lower = address.lower()
+
+    for tx in transfers:
+        from_lower = tx["from"].lower()
+        to_lower = tx["to"].lower()
+        val = tx.get("value_eth") or tx.get("value", 0)
+
+        edges.append({
+            "from": tx["from"],
+            "to": tx["to"],
+            "value": val,
+            "hash": tx["hash"],
+            "block": tx.get("block") or tx.get("slot", 0),
+        })
+
+        if from_lower == addr_lower:
+            total_sent += val
+            cp = tx["to"]
+            counterparty_flows.setdefault(cp, {"sent": 0.0, "received": 0.0})
+            counterparty_flows[cp]["sent"] += val
+        else:
+            total_received += val
+            cp = tx["from"]
+            counterparty_flows.setdefault(cp, {"sent": 0.0, "received": 0.0})
+            counterparty_flows[cp]["received"] += val
+
+    nodes.append({
+        "address": address,
+        "depth": 0,
+        "sent": round(total_sent, 4),
+        "received": round(total_received, 4),
+    })
+
+    for cp_addr, flows in counterparty_flows.items():
+        nodes.append({
+            "address": cp_addr,
+            "depth": 1,
+            "sent": round(flows["sent"], 4),
+            "received": round(flows["received"], 4),
+        })
+
+    nodes.sort(key=lambda n: n["sent"] + n["received"], reverse=True)
+
+    return {
+        "nodes": nodes,
+        "edges": edges,
+        "total_sent": round(total_sent, 4),
+        "total_received": round(total_received, 4),
+        "max_depth": 1,
+    }
 
 
 class FundFlowTracer:
@@ -10,89 +72,60 @@ class FundFlowTracer:
         self.visited: Set[str] = set()
 
     def trace(self, address: str, contract_address: str) -> Dict[str, Any]:
-        """从目标地址开始追踪资金流向"""
         self.visited = set()
-        nodes: List[Dict] = []
-        edges: List[Dict] = []
-        counterparty_flows: Dict[str, Dict[str, float]] = {}
-        total_sent = 0.0
-        total_received = 0.0
+        addr_lower = address.lower()
+        self.visited.add(addr_lower)
 
-        # 获取目标地址的直接交易
         txs = self.fetcher.get_transfers(address, contract_address)
-        self.visited.add(address.lower())
+        flow = build_flow_graph(address, txs)
 
-        for tx in txs:
-            from_lower = tx["from"].lower()
-            to_lower = tx["to"].lower()
+        if self.max_depth <= 1:
+            return flow
 
-            # 构建边
-            edges.append({
-                "from": tx["from"],
-                "to": tx["to"],
-                "value": tx["value_eth"],
-                "hash": tx["hash"],
-                "block": tx["block"],
-            })
+        for node in list(flow["nodes"]):
+            if node["depth"] != 1:
+                continue
+            cp_addr = node["address"]
+            cp_lower = cp_addr.lower()
+            if cp_lower in self.visited:
+                continue
+            self.visited.add(cp_lower)
 
-            # 统计流向
-            if from_lower == address.lower():
-                total_sent += tx["value_eth"]
-                cp = tx["to"]
-                if cp not in counterparty_flows:
-                    counterparty_flows[cp] = {"sent": 0.0, "received": 0.0}
-                counterparty_flows[cp]["sent"] += tx["value_eth"]
-            else:
-                total_received += tx["value_eth"]
-                cp = tx["from"]
-                if cp not in counterparty_flows:
-                    counterparty_flows[cp] = {"sent": 0.0, "received": 0.0}
-                counterparty_flows[cp]["received"] += tx["value_eth"]
+            cp_txs = self.fetcher.get_counterparty_transfers(cp_addr, contract_address)
+            node["counterparty_tx_count"] = len(cp_txs)
 
-        # 构建节点列表（目标地址 + 所有对手方）
-        nodes.append({
-            "address": address,
-            "depth": 0,
-            "sent": round(total_sent, 4),
-            "received": round(total_received, 4),
-        })
+            deeper_edges = []
+            for tx in cp_txs:
+                other = tx["to"] if tx["from"].lower() == cp_lower else tx["from"]
+                if other.lower() not in self.visited:
+                    deeper_edges.append({
+                        "from": tx["from"],
+                        "to": tx["to"],
+                        "value": tx["value_eth"],
+                        "hash": tx["hash"],
+                    })
 
-        for cp_addr, flows in counterparty_flows.items():
-            cp_node = {
-                "address": cp_addr,
-                "depth": 1,
-                "sent": round(flows["sent"], 4),
-                "received": round(flows["received"], 4),
-            }
+            if deeper_edges:
+                node["counterparty_count"] = len(set(
+                    e["to"] if e["from"].lower() == cp_lower else e["from"]
+                    for e in deeper_edges
+                ))
 
-            # 一级对手方追溯
-            if 1 < self.max_depth and cp_addr.lower() not in self.visited:
-                self.visited.add(cp_addr.lower())
-                cp_txs = self.fetcher.get_counterparty_transfers(cp_addr, contract_address)
-                cp_node["counterparty_tx_count"] = len(cp_txs)
+            flow["edges"].extend(deeper_edges)
+            for e in deeper_edges:
+                other_addr = e["to"] if e["from"].lower() == cp_lower else e["from"]
+                if not any(n["address"].lower() == other_addr.lower() for n in flow["nodes"]):
+                    flow["nodes"].append({
+                        "address": other_addr,
+                        "depth": 2,
+                        "sent": 0,
+                        "received": 0,
+                    })
 
-                # 追溯更深层（可选）
-                cp_cp: Set[str] = set()
-                for cp_tx in cp_txs:
-                    other = cp_tx["to"] if cp_tx["from"].lower() == cp_addr.lower() else cp_tx["from"]
-                    cp_cp.add(other)
-                cp_node["counterparty_count"] = len(cp_cp)
-
-            nodes.append(cp_node)
-
-        # 排序：按交易量降序
-        nodes.sort(key=lambda n: n["sent"] + n["received"], reverse=True)
-
-        return {
-            "nodes": nodes,
-            "edges": edges,
-            "total_sent": round(total_sent, 4),
-            "total_received": round(total_received, 4),
-            "max_depth": self.max_depth,
-        }
+        flow["max_depth"] = self.max_depth
+        return flow
 
     def format_flow_for_llm(self, flow: Dict) -> str:
-        """将资金流数据格式化为 LLM 可读的文本"""
         lines = []
         lines.append(f"Flow Depth: {flow['max_depth']}")
         lines.append(f"Total Sent: {flow['total_sent']} | Total Received: {flow['total_received']}")
@@ -101,12 +134,13 @@ class FundFlowTracer:
 
         for node in flow["nodes"][:15]:
             depth_tag = "[TARGET]" if node["depth"] == 0 else f"[depth {node['depth']}]"
-            lines.append(
+            line = (
                 f"  {depth_tag} {node['address'][:14]}... "
                 f"in={node['received']} out={node['sent']}"
             )
             if "counterparty_tx_count" in node:
-                lines[-1] += f" (their_tx={node['counterparty_tx_count']})"
+                line += f" (their_tx={node['counterparty_tx_count']})"
+            lines.append(line)
 
         if len(flow["edges"]) > 0 and len(flow["edges"]) <= 20:
             lines.append("\nEdges:")

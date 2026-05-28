@@ -41,7 +41,7 @@ class EVMFetcher:
         if max_blocks > 0:
             from_block = max(0, latest - max_blocks)
         else:
-            from_block = max(0, latest - 5000)  # 默认最近 5000 块
+            from_block = max(0, latest - 50000)  # 默认最近 50000 块
 
         # 分块查询出账 + 入账
         all_logs = []

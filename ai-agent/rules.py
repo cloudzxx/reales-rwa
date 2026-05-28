@@ -45,11 +45,12 @@ class RuleEngine:
 
         # 检查大额交易
         for tx in txs:
-            if tx.get("value_eth", 0) > 1000:
+            val = tx.get("value_eth") or tx.get("value", 0)
+            if val > 1000:
                 triggered.append({
                     "rule": "large_value",
                     "risk": "medium",
-                    "detail": f"Large transfer: {tx['value_eth']:.4f}",
+                    "detail": f"Large transfer: {float(val):.4f}",
                     "tx": tx.get("hash", ""),
                 })
 
