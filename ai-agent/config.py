@@ -1,5 +1,12 @@
-"""已知地址标签数据库"""
-# 交易所热钱包 / 存款地址
+"""已知地址标签数据库
+
+与真实场景的差距：
+- 真实系统使用实时更新的情报源（Chainalysis/TRM Labs/Elliptic），
+  覆盖数亿地址，每天更新多次
+- 真实系统包含制裁名单（OFAC SDN、UN、EU）、PEP名单、
+  暗网市场、勒索软件钱包等分类
+- 真实系统有地址聚类：通过资金流向将同一实控人的多个地址归并
+"""
 KNOWN_EXCHANGES = {
     # Ethereum
     "0x28c6c06298d514db089934071355e5743bf21d60": "Binance Hot Wallet",
@@ -10,26 +17,39 @@ KNOWN_EXCHANGES = {
     "0x1ab4973a48dc892cd9971ece8e01dcc7688f8f23": "Bybit Hot Wallet",
     "0x47ac0fb4f2d84898e4d9e7b4dab3c24507a6d503": "Kraken Hot Wallet",
     "0xf89d7b9c864f589bbf53a82105107622b35eaa40": "KuCoin Hot Wallet",
+    # Solana
+    "2wmVCSfPxGPjXwfcsvmFyJFhKCKQKmcCJWmtQnLAg3mF": "Binance SOL Hot Wallet",
+    "5QpYg1xLx3D1EK3Z7BqJsYEygnKzMhvqANdEgBx2WAyo": "Coinbase SOL Custody",
 }
 
-# 混币器合约（Tornado Cash 等）
 KNOWN_MIXERS = {
+    # Ethereum - Tornado Cash
     "0xa160cdab225685da1d56aa342ad8841c3b53f291": "Tornado Cash 0.1 ETH",
     "0x12d66f87a04a9e220743712ce6d9bb1b5616b8fc": "Tornado Cash 1 ETH",
     "0x47ce0c6ed5b0ce3d3a51fdb1c52dc66a7c3c2936": "Tornado Cash 10 ETH",
     "0x910cbd523d972eb0a6f4cae4618ad62622b39dbf": "Tornado Cash 100 ETH",
     "0xd96f2b1c14db8458374d9aca76e26c3d18364307": "Tornado Cash Governance",
+    # Solana
+    "J1JooCnSX3cBWrVxUoDhhB3bcxS9QbMFNMYR3EAzrJNx": "Solana Mixer (anonymous.zk)",
 }
 
-# 跨链桥合约
 KNOWN_BRIDGES = {
     "0x3ee18b2214aff97000d974cf647e7c347e8fa585": "Wormhole Bridge (ETH)",
     "0x66a71dcef29a0ffbdbe3c6a460a3b5bc225cd675": "LayerZero Bridge",
     "0x841ce48f9446c8e281d22f3f18595c914f5c5e44": "Celer Bridge",
 }
 
+# 模拟制裁名单 — 真实系统使用 OFAC SDN / EU / UN 制裁列表
+# 真实场景下会做模糊匹配和别名解析，这里仅做精确匹配
+SANCTIONED_ADDRESSES = {
+    "0x1da5821544e25c636c141977ba80ade2c458a9f0": "OFAC Sanctioned (Tornado Cash)",
+    "0x8576acc5c05d6ce88f4e49bf65bdf0c62f91353c": "OFAC Sanctioned (Tornado Cash)",
+    "0x9f4cda013e354b8fc6bf4e1a8d4b7ab0ce6c1e4d": "OFAC Sanctioned (Blender.io)",
+}
+
+
 def label_address(addr: str) -> dict:
-    """根据已知地址库标记地址类型"""
+    """标记地址类型 — 真实系统会实时查询外部 API，这里仅查本地缓存"""
     addr_lower = addr.lower()
     for ex_addr, name in KNOWN_EXCHANGES.items():
         if addr_lower == ex_addr.lower():
@@ -40,4 +60,7 @@ def label_address(addr: str) -> dict:
     for br_addr, name in KNOWN_BRIDGES.items():
         if addr_lower == br_addr.lower():
             return {"type": "bridge", "label": name}
+    for s_addr, name in SANCTIONED_ADDRESSES.items():
+        if addr_lower == s_addr.lower():
+            return {"type": "sanctioned", "label": name}
     return {"type": "unknown", "label": None}

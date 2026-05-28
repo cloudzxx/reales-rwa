@@ -6,6 +6,7 @@ import asyncio
 import logging
 from typing import Dict, List
 from web3 import Web3
+from solana.rpc.api import Client as SolanaClient
 from langchain_openai import ChatOpenAI
 
 logging.basicConfig(
@@ -18,8 +19,8 @@ logger = logging.getLogger("agent")
 from fetcher.evm import EVMFetcher
 from fetcher.solana import SolanaFetcher
 from analyzer.fund_flow import FundFlowTracer, build_flow_graph
-from analyzer.profiler import AddressProfiler
-from analyzer.risk import compute_multi_dimension_risk
+from analyzer.profiler import Profiler
+from analyzer.risk import RiskAnalyzer
 from report.structured import generate_structured_report
 from prompts import STRUCTURED_ANALYSIS_PROMPT
 from rules import RuleEngine
@@ -33,9 +34,10 @@ class ComplianceAgent:
     ):
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
         self.evm_fetcher = EVMFetcher(self.w3)
-        self.solana_fetcher = SolanaFetcher(solana_rpc_url)
+        self.solana_fetcher = SolanaFetcher(SolanaClient(solana_rpc_url))
         self.flow_tracer = FundFlowTracer(self.evm_fetcher, max_depth=2)
-        self.profiler = AddressProfiler()
+        self.profiler = Profiler()
+        self.risk_analyzer = RiskAnalyzer()
         self.rule_engine = RuleEngine()
 
         self.llm = None
@@ -68,15 +70,17 @@ class ComplianceAgent:
 
         # 2. 资金流向追踪
         t0 = time.time()
-        flow = self.flow_tracer.trace(address, contract_address)
+        traced_txs = self.flow_tracer.trace(address, contract_address)
+        all_txs = txs + traced_txs
+        flow = build_flow_graph(all_txs)
         all_addresses = list(set(
-            [n["address"] for n in flow["nodes"]]
+            [n["id"] for n in flow["nodes"]]
             + [e["from"] for e in flow["edges"]]
             + [e["to"] for e in flow["edges"]]
         ))
-        labels = self.profiler.profile_addresses(all_addresses)
-        logger.info(f"  flow: {len(flow['nodes'])} nodes depth={flow['max_depth']} in {time.time()-t0:.2f}s")
-        audit.append({"stage": "fund_flow", "status": "ok", "detail": f"Traced {len(flow['nodes'])} nodes at depth {flow['max_depth']}"})
+        labels = self.profiler.profile(all_addresses)
+        logger.info(f"  flow: {len(flow['nodes'])} nodes depth={self.flow_tracer.max_depth} in {time.time()-t0:.2f}s")
+        audit.append({"stage": "fund_flow", "status": "ok", "detail": f"Traced {len(flow['nodes'])} nodes at depth {self.flow_tracer.max_depth}"})
 
         # 3. 规则引擎
         t0 = time.time()
@@ -93,8 +97,8 @@ class ComplianceAgent:
 
         # 4. 多维风险评分
         t0 = time.time()
-        risk_dims = compute_multi_dimension_risk(flow, labels, stats)
-        logger.info(f"  risk_dims: {len(risk_dims)} dimensions in {time.time()-t0:.3f}s")
+        risk_dims = self.risk_analyzer.evaluate(profiles=labels, fund_flow=flow, stats=stats)
+        logger.info(f"  risk_dims: {len(risk_dims['dimensions'])} dimensions in {time.time()-t0:.3f}s")
 
         # 5. LLM 分析
         t0 = time.time()
@@ -126,7 +130,7 @@ class ComplianceAgent:
 
         # 1. 获取 SPL Token 转账
         t0 = time.time()
-        txs = self.solana_fetcher.get_token_transfers(address)
+        txs = self.solana_fetcher.get_spl_transfers(address)
         logger.info(f"  fetch: {len(txs)} token transfers in {time.time()-t0:.2f}s")
         if not txs:
             audit.append({"stage": "fetcher", "status": "no_data", "detail": "No SPL Token transfers found"})
@@ -135,13 +139,13 @@ class ComplianceAgent:
 
         # 2. 资金流向追踪
         t0 = time.time()
-        flow = build_flow_graph(address, txs)
+        flow = build_flow_graph(txs)
         all_addresses = list(set(
-            [n["address"] for n in flow["nodes"]]
+            [n["id"] for n in flow["nodes"]]
             + [e["from"] for e in flow["edges"]]
             + [e["to"] for e in flow["edges"]]
         ))
-        labels = self.profiler.profile_addresses(all_addresses)
+        labels = self.profiler.profile(all_addresses)
         logger.info(f"  flow: {len(flow['nodes'])} nodes in {time.time()-t0:.2f}s")
         audit.append({"stage": "fund_flow", "status": "ok", "detail": f"Traced {len(flow['nodes'])} nodes"})
 
@@ -160,8 +164,8 @@ class ComplianceAgent:
 
         # 4. 多维风险评分
         t0 = time.time()
-        risk_dims = compute_multi_dimension_risk(flow, labels, stats)
-        logger.info(f"  risk_dims: {len(risk_dims)} dimensions in {time.time()-t0:.3f}s")
+        risk_dims = self.risk_analyzer.evaluate(profiles=labels, fund_flow=flow, stats=stats)
+        logger.info(f"  risk_dims: {len(risk_dims['dimensions'])} dimensions in {time.time()-t0:.3f}s")
 
         # 5. LLM 分析
         t0 = time.time()
@@ -199,8 +203,8 @@ class ComplianceAgent:
     ) -> dict:
         try:
             if self.llm:
-                flow_graph = self.flow_tracer.format_flow_for_llm(flow)
-                label_text = self.profiler.format_labels_for_llm(labels)
+                flow_graph = self._format_flow_for_llm(flow)
+                label_text = self._format_labels_for_llm(labels)
                 value_key = "value_eth" if currency == "ETH" else "value"
                 sample_txs = "\n".join(
                     f"  {tx['hash'][:10]}...: {tx['from'][:8]}..->{tx['to'][:8]}.. = {tx.get(value_key, tx.get('value', 0)):.4f}"
@@ -230,6 +234,30 @@ class ComplianceAgent:
 
         logger.info("LLM unavailable, using rule engine fallback")
         return self._fallback_llm_result(address, stats, risk_dims, currency)
+
+    def _format_flow_for_llm(self, flow: dict) -> str:
+        lines = []
+        lines.append(f"Total Sent: {flow['total_sent']:.4f} | Total Received: {flow['total_received']:.4f}")
+        lines.append(f"Nodes: {len(flow['nodes'])} | Edges: {len(flow['edges'])}")
+        lines.append("")
+        for node in flow["nodes"][:15]:
+            lines.append(f"  {node['id'][:14]}... sent={node['total_sent']:.4f} recv={node['total_received']:.4f}")
+        if len(flow["edges"]) <= 20:
+            lines.append("")
+            for edge in flow["edges"]:
+                lines.append(f"  {edge['from'][:10]}.. -> {edge['to'][:10]}.. = {edge['value_eth']:.4f}")
+        return "\n".join(lines)
+
+    def _format_labels_for_llm(self, labels: dict) -> str:
+        type_summary = {"exchange": 0, "mixer": 0, "bridge": 0, "sanctioned": 0, "unknown": 0}
+        lines = []
+        for addr, info in labels.items():
+            t = info.get("type", "unknown")
+            type_summary[t] = type_summary.get(t, 0) + 1
+            if t != "unknown" and info.get("label"):
+                lines.append(f"  {addr[:14]}... → {t.upper()}: {info['label']}")
+        lines.insert(0, f"Label Summary: {type_summary}")
+        return "\n".join(lines)
 
     async def _call_llm(self, variables: dict) -> tuple:
         messages = STRUCTURED_ANALYSIS_PROMPT.format_messages(**variables)

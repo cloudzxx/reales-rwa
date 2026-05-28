@@ -28,17 +28,17 @@ def generate_structured_report(
             "dimensions": llm_result.get("risk_dimensions", {}),
         },
         "fund_flow": {
-            "max_depth": fund_flow.get("max_depth", 1),
+            "max_depth": 1,
             "total_sent": fund_flow.get("total_sent", 0),
             "total_received": fund_flow.get("total_received", 0),
             "nodes": [
                 {
-                    "address": n["address"],
-                    "label": labels.get(n["address"], {}).get("label"),
-                    "type": labels.get(n["address"], {}).get("type", "unknown"),
-                    "flow_in": n.get("received", 0),
-                    "flow_out": n.get("sent", 0),
-                    "depth": n.get("depth", 0),
+                    "address": n["id"],
+                    "label": labels.get(n["id"], {}).get("label"),
+                    "type": labels.get(n["id"], {}).get("type", "unknown"),
+                    "flow_in": n.get("total_received", 0),
+                    "flow_out": n.get("total_sent", 0),
+                    "depth": 0,
                 }
                 for n in fund_flow.get("nodes", [])[:20]
             ],
