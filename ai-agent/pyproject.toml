@@ -1,0 +1,16 @@
+[project]
+name = "reales-rwa-ai-agent"
+version = "0.1.0"
+description = "AI-powered compliance analysis agent for RealES RWA platform"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "langchain>=0.3.0",
+    "langchain-openai>=0.2.0",
+    "web3>=7.0.0",
+    "python-dotenv>=1.0.1",
+    "requests>=2.31.0",
+    "solana>=0.36.1",
+    "solders>=0.22.1",
+]
