@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="diamondGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#6B21A8"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="lockGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+  <rect
+    x="9" y="9"
+    width="30" height="30"
+    rx="4"
+    transform="rotate(45 24 24)"
+    stroke="url(#diamondGrad)"
+    stroke-width="2.5"
+    fill="none"
+    stroke-linejoin="round"
+  />
+  <rect x="19" y="25" width="10" height="8" rx="1.5" stroke="url(#lockGrad)" stroke-width="2" fill="none"/>
+  <path d="M21 25 V20.5 A3 3 0 0 1 27 20.5 V25" stroke="url(#lockGrad)" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <circle cx="24" cy="29" r="1.2" fill="url(#lockGrad)"/>
+</svg>

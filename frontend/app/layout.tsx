@@ -5,6 +5,14 @@ import { Providers } from "./providers";
 export const metadata: Metadata = {
   title: "RWA Tokenization",
   description: "Real World Asset Tokenization Platform",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+  },
+  appleWebApp: {
+    title: "Reales RWA",
+  },
 };
 
 export default function RootLayout({
