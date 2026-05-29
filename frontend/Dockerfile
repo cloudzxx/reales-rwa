@@ -8,12 +8,10 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --no-frozen-lockfile --registry=https://registry.npmmirror.com --config.ignore-scripts=true --config.minimumReleaseAge=0
 RUN pnpm rebuild keccak
 
-COPY . .
+ARG CACHEBUST
+RUN echo "build $CACHEBUST"
 
-# 占位文件：让 next build 在部署文件就绪前也能通过
-RUN mkdir -p lib && \
-    echo 'export const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";' > lib/deployment.ts && \
-    echo 'export const CONTRACT_ABI = [] as const;' > lib/abi.ts
+COPY . .
 
 RUN rm -rf node_modules/.cache && npx next build
 
@@ -23,12 +21,7 @@ WORKDIR /app
 
 COPY --from=builder /app/.next/standalone /app
 COPY --from=builder /app/.next/static /app/.next/static
-
-# 用于运行时动态 import("@/lib/deployment") 的占位文件
-# entrypoint.sh 会从 /generated/ 覆盖为真实值
-RUN mkdir -p /app/lib && \
-    echo 'export const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";' > /app/lib/deployment.ts && \
-    echo 'export const CONTRACT_ABI = [] as const;' > /app/lib/abi.ts
+COPY --from=builder /app/lib /app/lib
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

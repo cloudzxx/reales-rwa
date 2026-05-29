@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { getReadContract } from "@/lib/contract";
 import { useI18n } from "@/lib/i18n/context";
 import { useChain } from "@/lib/chain-context";
 
@@ -35,11 +34,12 @@ export default function IssuePage() {
     if (chain === "evm") {
       (async () => {
         try {
-          const contract = getReadContract();
-          const owner = await contract.owner();
-          setContractOwner(owner);
+          const res = await fetch("/api/token");
+          if (!res.ok) throw new Error(await res.text());
+          const data = await res.json();
+          setContractOwner(data.owner);
           if (evmAddress) {
-            setIsOwner(owner.toLowerCase() === evmAddress.toLowerCase());
+            setIsOwner(data.owner.toLowerCase() === evmAddress.toLowerCase());
           }
         } catch {
           setIsOwner(false);

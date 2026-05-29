@@ -58,8 +58,8 @@ function Header() {
           onChange={e => setChain(e.target.value as Chain)}
           className="ml-2 text-xs font-mono bg-gray-100 border border-gray-200 rounded-md px-2 py-1 text-gray-600 cursor-pointer hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
         >
-          <option value="evm">EVM</option>
-          <option value="solana">SOL</option>
+          <option value="evm">Ethereum</option>
+          <option value="solana">Solana</option>
         </select>
         <nav className="flex items-center gap-1">
           {[
@@ -73,11 +73,11 @@ function Header() {
             </Link>
           ))}
 
-          <button onClick={toggleLang} className="px-2.5 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition font-medium">
-            {lang === "en" ? "中文" : "EN"}
-          </button>
         </nav>
         {chain === "evm" ? <ConnectButton /> : <WalletMultiButton />}
+        <button onClick={toggleLang} className="px-2.5 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition font-medium">
+          {lang === "en" ? "中文" : "EN"}
+        </button>
       </div>
     </header>
   );

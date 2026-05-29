@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getReadContract } from "@/lib/contract";
-import { formatEther } from "ethers";
 import { useI18n } from "@/lib/i18n/context";
 import { useChain } from "@/lib/chain-context";
 
@@ -25,19 +23,16 @@ export default function HomePage() {
     if (chain === "evm") {
       async function load() {
         try {
-          const contract = getReadContract();
-          const [name, issuer, assetType, maxSupply] =
-            await contract.getAssetInfo();
-          const totalSupply = await contract.totalSupply();
-          const address = await contract.getAddress();
-
+          const res = await fetch("/api/asset-info");
+          if (!res.ok) throw new Error(await res.text());
+          const data = await res.json();
           setAsset({
-            name,
-            issuer,
-            assetType,
-            maxSupply: formatEther(maxSupply),
-            totalSupply: formatEther(totalSupply),
-            contractAddress: address,
+            name: data.name,
+            issuer: data.issuer,
+            assetType: data.assetType,
+            maxSupply: data.maxSupply,
+            totalSupply: data.totalSupply,
+            contractAddress: data.contractAddress,
           });
         } catch (err) {
           console.error("Failed to load asset info:", err);
@@ -47,7 +42,6 @@ export default function HomePage() {
       }
       load();
     } else {
-      // Solana: 显示 Solana 平台概览
       setAsset(null);
       setLoading(false);
     }
