@@ -19,6 +19,7 @@ import { I18nProvider, useI18n, type Lang } from "@/lib/i18n/context";
 import { ChainProvider, useChain, type Chain } from "@/lib/chain-context";
 import { SolanaProviders } from "@/lib/solana/SolanaProviders";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { Logo } from "@/components/logo/Logo";
 
 const connectors = connectorsForWallets(
   [
@@ -49,9 +50,8 @@ function Header() {
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-200/60">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <span className="w-8 h-8 bg-gradient-to-br from-blue-500 to-violet-500 rounded-xl flex items-center justify-center text-white font-bold group-hover:shadow-lg group-hover:shadow-blue-500/25 transition-shadow">R</span>
-          <span className="font-semibold text-gray-800">{t("nav.platform")}</span>
+        <Link href="/" className="flex items-center">
+          <Logo size="md" />
         </Link>
         <select
           value={chain}
