@@ -53,6 +53,14 @@ function Header() {
           <span className="w-8 h-8 bg-gradient-to-br from-blue-500 to-violet-500 rounded-xl flex items-center justify-center text-white font-bold group-hover:shadow-lg group-hover:shadow-blue-500/25 transition-shadow">R</span>
           <span className="font-semibold text-gray-800">{t("nav.platform")}</span>
         </Link>
+        <select
+          value={chain}
+          onChange={e => setChain(e.target.value as Chain)}
+          className="ml-2 text-xs font-mono bg-gray-100 border border-gray-200 rounded-md px-2 py-1 text-gray-600 cursor-pointer hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+        >
+          <option value="evm">EVM</option>
+          <option value="solana">SOL</option>
+        </select>
         <nav className="flex items-center gap-1">
           {[
             { href: "/", label: "nav.home" },
@@ -64,10 +72,7 @@ function Header() {
               {t(label as any)}
             </Link>
           ))}
-          <div className="ml-2 flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
-            <button onClick={() => setChain("evm")} className={`px-2.5 py-1 text-sm rounded-md transition font-medium ${chain === "evm" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>EVM</button>
-            <button onClick={() => setChain("solana")} className={`px-2.5 py-1 text-sm rounded-md transition font-medium ${chain === "solana" ? "bg-white text-gray-800 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>SOL</button>
-          </div>
+
           <button onClick={toggleLang} className="px-2.5 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition font-medium">
             {lang === "en" ? "中文" : "EN"}
           </button>
