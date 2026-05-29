@@ -16,7 +16,7 @@ export function Logo({ size = "md", className = "" }: LogoProps) {
   const gap = size === "sm" ? 8 : size === "md" ? 10 : 12;
 
   return (
-    <div className={`flex items-center gap-${gap} ${className}`} style={{ gap }}>
+    <div className={`flex items-center ${className}`} style={{ gap }}>
       <LogoMark size={s.mark} />
       <div className="flex items-baseline gap-1">
         <span
@@ -62,38 +62,45 @@ export function LogoMark({ size = 32, className = "" }: LogoMarkProps) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <linearGradient id={`hexGrad-${size}`} x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+        <linearGradient id={`diamondGrad-${size}`} x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#6B21A8" />
           <stop offset="100%" stopColor="#06B6D4" />
         </linearGradient>
-        <linearGradient id={`checkGrad-${size}`} x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+        <linearGradient id={`lockGrad-${size}`} x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
           <stop offset="0%" stopColor="#10B981" />
           <stop offset="100%" stopColor="#06B6D4" />
         </linearGradient>
       </defs>
-      <polygon
-        points="24,4 42,14 42,34 24,44 6,34 6,14"
-        stroke={`url(#hexGrad-${size})`}
+      <rect
+        x="9" y="9"
+        width="30" height="30"
+        rx="4"
+        transform="rotate(45 24 24)"
+        stroke={`url(#diamondGrad-${size})`}
         strokeWidth={strokeW}
         fill="none"
         strokeLinejoin="round"
       />
-      <line
-        x1="6"
-        y1="24"
-        x2="38"
-        y2="24"
-        stroke={`url(#checkGrad-${size})`}
+      <rect
+        x="19" y="25"
+        width="10" height="8"
+        rx="1.5"
+        stroke={`url(#lockGrad-${size})`}
+        strokeWidth={strokeW * 0.8}
+        fill="none"
+      />
+      <path
+        d={`M21 25 V${20.5 + (size < 32 ? 0 : 0)} A3 3 0 0 1 27 ${20.5 + (size < 32 ? 0 : 0)} V25`}
+        stroke={`url(#lockGrad-${size})`}
         strokeWidth={strokeW * 0.8}
         strokeLinecap="round"
-      />
-      <polyline
-        points="32,17 37,22 44,13"
-        stroke={`url(#checkGrad-${size})`}
-        strokeWidth={strokeW}
-        strokeLinecap="round"
-        strokeLinejoin="round"
         fill="none"
+      />
+      <circle
+        cx="24"
+        cy={25 + (size >= 48 ? 4 : size >= 32 ? 3.5 : 3)}
+        r={size >= 48 ? 1.2 : size >= 32 ? 1 : 0.8}
+        fill={`url(#lockGrad-${size})`}
       />
     </svg>
   );
