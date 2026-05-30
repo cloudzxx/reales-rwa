@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getReadContract } from "@/lib/contract";
 import { formatEther } from "ethers";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { address: string } }
@@ -13,7 +15,7 @@ export async function GET(
     const isFrozen = await contract.frozen(params.address);
 
     const filter = contract.filters.Transfer();
-    const events = await contract.queryFilter(filter, 0);
+    const events = await contract.queryFilter(filter, -100000);
 
     const transfers = events
       .filter((e: any) => {
@@ -35,7 +37,7 @@ export async function GET(
     return NextResponse.json({
       address: params.address,
       balance: formatEther(bal),
-      isWhitelisted: whitelisted,
+      isWhitelisted,
       isFrozen,
       transfers,
     });
@@ -46,4 +48,5 @@ export async function GET(
       { status: 500 }
     );
   }
+}
 }
