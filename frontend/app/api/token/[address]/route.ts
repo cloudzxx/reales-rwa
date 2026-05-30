@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getReadContract } from "@/lib/contract";
-import { formatEther } from "ethers";
 
 export const dynamic = "force-dynamic";
 
@@ -10,33 +9,38 @@ export async function GET(
 ) {
   try {
     const contract = getReadContract();
-    const bal = await contract.balanceOf(params.address);
     const whitelisted = await contract.whitelist(params.address);
     const isFrozen = await contract.frozen(params.address);
 
-    const filter = contract.filters.Transfer();
+    const firstId = await contract.assetIds(0);
+    const bal = await contract.balanceOf(params.address, firstId);
+    const total = await contract.totalSupply(firstId);
+    const format = (v: bigint) => (Number(v) / 1e18).toFixed(4);
+
+    const filter = contract.filters.TransferSingle();
     const events = await contract.queryFilter(filter, -20000);
 
     const transfers = events
       .filter((e: any) => {
-        return (
-          e.args[0].toLowerCase() === params.address.toLowerCase() ||
-          e.args[1].toLowerCase() === params.address.toLowerCase()
-        );
+        const from = e.args[0]?.toLowerCase();
+        const to = e.args[1]?.toLowerCase();
+        const addr = params.address.toLowerCase();
+        return from === addr || to === addr;
       })
       .slice(-20)
       .reverse()
       .map((e: any) => ({
         from: e.args[0],
         to: e.args[1],
-        value: formatEther(e.args[2]),
+        value: format(e.args[3]),
         hash: e.transactionHash,
         blockNumber: e.blockNumber,
       }));
 
     return NextResponse.json({
       address: params.address,
-      balance: formatEther(bal),
+      balance: format(bal),
+      totalSupply: format(total),
       isWhitelisted: whitelisted,
       isFrozen,
       transfers,

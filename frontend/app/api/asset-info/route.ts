@@ -15,32 +15,20 @@ export async function GET() {
       );
     }
 
-    const [
-      name, issuer, assetType, maxSupply, totalSupply,
-    ] = await Promise.all([
-      contract.assetName(),
-      contract.issuer(),
-      contract.assetType(),
-      contract.maxSupply(),
-      contract.totalSupply(),
-    ]);
+    const firstId = await contract.assetIds(0);
+    const cfg = await contract.assets(firstId);
+    const supply = await contract.totalSupply(firstId);
 
     return NextResponse.json({
-      name,
-      issuer,
-      assetType,
-      maxSupply: Number(maxSupply) / 1e18,
-      totalSupply: Number(totalSupply) / 1e18,
+      name: cfg.name,
+      issuer: cfg.issuer,
+      assetType: cfg.assetType,
+      maxSupply: Number(cfg.maxSupply) / 1e18,
+      totalSupply: Number(supply) / 1e18,
       contractAddress: address,
+      tokenId: Number(firstId),
     });
   } catch (err: any) {
-    const msg = String(err?.message || err);
-    if (msg.includes("call revert") || msg.includes("could not decode")) {
-      return NextResponse.json(
-        { error: "Contract not found on this network", code: "NO_CONTRACT" },
-        { status: 404 },
-      );
-    }
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: String(err?.message || err) }, { status: 500 });
   }
 }

@@ -6,7 +6,12 @@ const sepoliaKey = process.env.SEPOLIA_PRIVATE_KEY || "";
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.20",
+  solidity: {
+    version: "0.8.27",
+    settings: {
+      evmVersion: "cancun",
+    },
+  },
   networks: {
     localhost: {
       url: rpcUrl,
