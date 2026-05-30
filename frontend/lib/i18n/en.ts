@@ -30,7 +30,8 @@ export const en = {
   "home.step3Desc": "Owner can freeze suspicious addresses instantly",
   "home.step4Title": "Compliance",
   "home.step4Desc": "AI agent analyzes on-chain behavior & risk",
-  "home.loadError": "Failed to load asset data. Is the Hardhat node running?",
+  "home.loadError": "Failed to load asset data. Is the contract deployed?",
+  "home.noContract": "Contract not configured — set CONTRACT_ADDRESS to proceed.",
   // solana home
   "home.solana.tokenOverview": "Token Overview",
   "home.solana.standard": "Standard",

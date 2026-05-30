@@ -18,13 +18,20 @@ export default function HomePage() {
   const { chain } = useChain();
   const [asset, setAsset] = useState<AssetInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [noContract, setNoContract] = useState(false);
 
   useEffect(() => {
     if (chain === "evm") {
       async function load() {
         try {
           const res = await fetch("/api/asset-info");
-          if (!res.ok) throw new Error(await res.text());
+          if (!res.ok) {
+            if (res.status === 404) {
+              setNoContract(true);
+              return;
+            }
+            throw new Error(await res.text());
+          }
           const data = await res.json();
           setAsset({
             name: data.name,
@@ -66,7 +73,7 @@ export default function HomePage() {
             </div>
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              {t("home.solanaLocalnet")}
+              {t("home.chainActive")}
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -112,6 +119,19 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      );
+    }
+    if (noContract) {
+      return (
+        <div className="py-24 text-center">
+          <div className="max-w-md mx-auto space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-100 border border-amber-200 flex items-center justify-center">
+              <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-800">{t("home.noContract")}</h2>
+            <p className="text-gray-500 text-sm">Set <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono text-amber-700">CONTRACT_ADDRESS</code> in <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded font-mono">/data/reales-rwa/.env</code> then restart.</p>
           </div>
         </div>
       );

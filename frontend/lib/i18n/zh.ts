@@ -30,7 +30,8 @@ export const zh = {
   "home.step3Desc": "所有者可随时冻结可疑地址",
   "home.step4Title": "合规",
   "home.step4Desc": "AI 代理分析链上行为和风险",
-  "home.loadError": "无法加载资产数据，请确认 Hardhat 节点是否运行",
+  "home.loadError": "无法加载资产数据，请确认合约是否已部署",
+  "home.noContract": "合约未配置 — 请设置 CONTRACT_ADDRESS",
   // solana home
   "home.solana.tokenOverview": "代币概览",
   "home.solana.standard": "标准",
