@@ -2,7 +2,7 @@
 set -e
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-CONTRACTS_DIR="$ROOT_DIR/contracts"
+EVM_DIR="$ROOT_DIR/evm"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 AI_DIR="$ROOT_DIR/ai-agent"
 
@@ -17,13 +17,13 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "=== Starting Hardhat node ==="
-cd "$CONTRACTS_DIR" && npx hardhat node &
+cd "$EVM_DIR" && npx hardhat node &
 HH_PID=$!
 sleep 3
 
 echo ""
 echo "=== Deploying contracts ==="
-cd "$CONTRACTS_DIR" && npx hardhat run scripts/deploy.js --network localhost
+cd "$EVM_DIR" && npx hardhat run scripts/deploy.js --network localhost
 echo ""
 
 echo "=== Starting AI Agent ==="
