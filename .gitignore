@@ -14,7 +14,7 @@ typechain-types/
 frontend/lib/deployment.ts
 frontend/lib/abi.ts
 # Solana
-solana/target/
-solana/node_modules/
+contracts/solana/target/
+contracts/solana/node_modules/
 # EVM
-evm/node_modules/
+contracts/evm/node_modules/

@@ -2,7 +2,7 @@
 set -e
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-EVM_DIR="$ROOT_DIR/evm"
+EVM_DIR="$ROOT_DIR/contracts/evm"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 AI_DIR="$ROOT_DIR/ai-agent"
 
