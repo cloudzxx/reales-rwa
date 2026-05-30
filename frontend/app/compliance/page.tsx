@@ -20,8 +20,6 @@ export default function CompliancePage() {
   const { t } = useI18n(); const { chain } = useChain();
   const [addr, setAddr] = useState(""); const [report, setReport] = useState<ComplianceReport | null>(null);
   const [loading, setLoading] = useState(false); const [error, setError] = useState<string | null>(null);
-  const [useExternal, setUseExternal] = useState(false);
-  const [extRpc, setExtRpc] = useState(""); const [extContract, setExtContract] = useState("");
 
   const riskScore = (report?.risk_assessment?.overall_score || report?.risk_score || 0) as number;
   const riskLevel = report?.risk_assessment?.level || report?.risk_level || "low";
@@ -33,7 +31,6 @@ export default function CompliancePage() {
     setLoading(true); setError(null); setReport(null);
     try {
       const body: any = { address: addr, chain };
-      if (useExternal) { if (extRpc) body.rpc_url = extRpc; if (extContract) body.contract_address = extContract; }
       const res = await fetch("/api/compliance/report", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const data = await res.json(); if (!res.ok) throw new Error(data.error); setReport(data);
     } catch (err: any) { setError(err.message); } finally { setLoading(false); }
@@ -46,12 +43,6 @@ export default function CompliancePage() {
         <input type="text" value={addr} onChange={e => setAddr(e.target.value)} placeholder={t("compliance.placeholder")} className="flex-1 border rounded-xl px-4 py-3 text-lg font-mono focus:ring-2 focus:ring-blue-500/30" />
         <button type="submit" disabled={loading} className="bg-gradient-to-r from-blue-600 to-violet-600 text-white font-semibold rounded-xl px-8 py-3 text-lg">{loading ? t("compliance.analyzing") : t("compliance.analyze")}</button>
       </form>
-
-      <div className="flex gap-3 mb-6 text-sm">
-        <button onClick={() => setUseExternal(false)} className={`px-3 py-1.5 rounded-lg ${!useExternal ? "bg-blue-100 text-blue-700" : "bg-gray-100"}`}>Local</button>
-        <button onClick={() => setUseExternal(true)} className={`px-3 py-1.5 rounded-lg ${useExternal ? "bg-blue-100 text-blue-700" : "bg-gray-100"}`}>External RPC</button>
-        {useExternal && <><input type="text" value={extRpc} onChange={e => setExtRpc(e.target.value)} placeholder="RPC URL" className="flex-1 px-2 py-1 text-xs border rounded" /><input type="text" value={extContract} onChange={e => setExtContract(e.target.value)} placeholder="Contract" className="flex-1 px-2 py-1 text-xs border rounded font-mono" /></>}
-      </div>
 
       {error && <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-red-600 mb-6">{error}</div>}
 
