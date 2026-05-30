@@ -37,7 +37,7 @@ export async function GET(
     return NextResponse.json({
       address: params.address,
       balance: formatEther(bal),
-      isWhitelisted,
+      isWhitelisted: whitelisted,
       isFrozen,
       transfers,
     });
