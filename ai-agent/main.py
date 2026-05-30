@@ -43,7 +43,6 @@ agent = ComplianceAgent(
 class AnalyzeRequest(BaseModel):
     address: HexAddress
     contract_address: HexAddress
-    rpc_url: str = ""
 
 
 class SolanaAnalyzeRequest(BaseModel):
@@ -58,15 +57,7 @@ async def health():
 
 @app.post("/analyze/address")
 async def analyze_address(req: AnalyzeRequest):
-    if req.rpc_url:
-        # 使用外部 RPC 进行一次分析（限制最近 50000 个区块）
-        external_agent = ComplianceAgent(
-            rpc_url=req.rpc_url,
-            solana_rpc_url=os.getenv("SOLANA_RPC_URL", "http://127.0.0.1:8899"),
-        )
-        report = await external_agent.analyze(req.address, req.contract_address, max_blocks=50000)
-    else:
-        report = await agent.analyze(req.address, req.contract_address)
+    report = await agent.analyze(req.address, req.contract_address)
     return report
 
 

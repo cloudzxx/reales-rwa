@@ -5,7 +5,7 @@ const AI_AGENT_TIMEOUT = 120_000;
 
 export async function POST(request: NextRequest) {
   try {
-    const { address, chain, rpc_url, contract_address } = await request.json();
+    const { address, chain, contract_address } = await request.json();
 
     if (!address) {
       return NextResponse.json(
@@ -19,7 +19,6 @@ export async function POST(request: NextRequest) {
     const { CONTRACT_ADDRESS } = await import("@/lib/deployment");
 
     const body: any = { address, contract_address: contract_address || CONTRACT_ADDRESS };
-    if (rpc_url) body.rpc_url = rpc_url;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), AI_AGENT_TIMEOUT);
