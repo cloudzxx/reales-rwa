@@ -15,7 +15,7 @@ export async function GET(
     const isFrozen = await contract.frozen(params.address);
 
     const filter = contract.filters.Transfer();
-    const events = await contract.queryFilter(filter, -100000);
+    const events = await contract.queryFilter(filter, -20000);
 
     const transfers = events
       .filter((e: any) => {
