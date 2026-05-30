@@ -35,8 +35,8 @@ app.add_middleware(
 )
 
 agent = ComplianceAgent(
-    rpc_url=os.getenv("RPC_URL", "http://127.0.0.1:8545"),
-    solana_rpc_url=os.getenv("SOLANA_RPC_URL", "http://127.0.0.1:8899"),
+    rpc_url=os.getenv("RPC_URL", "https://ethereum-sepolia.publicnode.com"),
+    solana_rpc_url=os.getenv("SOLANA_RPC_URL", "https://api.devnet.solana.com"),
 )
 
 

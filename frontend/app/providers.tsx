@@ -12,7 +12,7 @@ import {
   injectedWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { WagmiProvider, createConfig, http } from "wagmi";
-import { hardhat } from "wagmi/chains";
+import { sepolia } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Link from "next/link";
 import { I18nProvider, useI18n, type Lang } from "@/lib/i18n/context";
@@ -31,11 +31,13 @@ const connectors = connectorsForWallets(
   { appName: "RWA Tokenization", projectId: "00000000" },
 );
 
+const evmRpc = process.env.NEXT_PUBLIC_RPC_URL || "https://ethereum-sepolia.publicnode.com";
+
 const config = createConfig({
-  chains: [hardhat],
+  chains: [sepolia],
   connectors,
   transports: {
-    [hardhat.id]: http(),
+    [sepolia.id]: http(evmRpc),
   },
   ssr: true,
 });

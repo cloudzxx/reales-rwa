@@ -1,6 +1,6 @@
 import { Connection, clusterApiUrl } from "@solana/web3.js";
 
-const SOLANA_RPC = process.env.SOLANA_RPC_URL || "http://127.0.0.1:8899";
+const SOLANA_RPC = process.env.SOLANA_RPC_URL || clusterApiUrl("devnet");
 
 let connection: Connection | null = null;
 

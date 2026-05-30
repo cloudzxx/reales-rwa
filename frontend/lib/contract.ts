@@ -4,6 +4,9 @@ import { CONTRACT_ABI } from "./abi";
 import fs from "fs";
 
 function getContractAddress(): string {
+  if (process.env.CONTRACT_ADDRESS) {
+    return process.env.CONTRACT_ADDRESS;
+  }
   try {
     const raw = fs.readFileSync("/app/lib/deployment.json", "utf8");
     return JSON.parse(raw).address;
