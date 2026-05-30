@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Python AI Agent 微服务的地址（可通过环境变量覆盖）
 const AI_AGENT_URL = process.env.AI_AGENT_URL || "http://127.0.0.1:8000";
+const AI_AGENT_TIMEOUT = 120_000;
 
-// POST /api/compliance/report  —  代理转发到 AI 合规分析 Agent
-// 支持可选参数：rpc_url（自定义 RPC）、contract_address（自定义合约地址）
 export async function POST(request: NextRequest) {
   try {
     const { address, chain, rpc_url, contract_address } = await request.json();
@@ -16,20 +14,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 根据链选择对应的 AI Agent 端点
     const endpoint = chain === "solana" ? "/analyze/solana" : "/analyze/address";
 
     const { CONTRACT_ADDRESS } = await import("@/lib/deployment");
 
-    // 构建请求体
     const body: any = { address, contract_address: contract_address || CONTRACT_ADDRESS };
     if (rpc_url) body.rpc_url = rpc_url;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), AI_AGENT_TIMEOUT);
 
     const res = await fetch(`${AI_AGENT_URL}${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (!res.ok) {
       const text = await res.text();
@@ -43,6 +44,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data);
   } catch (err: any) {
     console.error("Compliance report error:", err);
+    if (err.name === "AbortError") {
+      return NextResponse.json({ error: "AI Agent timed out" }, { status: 504 });
+    }
     return NextResponse.json(
       { error: err.message || "Failed to get compliance report" },
       { status: 500 }

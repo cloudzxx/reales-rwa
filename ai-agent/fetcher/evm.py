@@ -14,7 +14,7 @@ from web3 import Web3
 
 TRANSFER_EVENT_SIGNATURE = Web3.keccak(text="Transfer(address,address,uint256)")
 MAX_BLOCK_RANGE = 200
-DEFAULT_BLOCK_RANGE = 50000
+DEFAULT_BLOCK_RANGE = 10000
 
 
 class EVMFetcher:

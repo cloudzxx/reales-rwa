@@ -32,7 +32,7 @@ class ComplianceAgent:
         rpc_url: str = "http://127.0.0.1:8545",
         solana_rpc_url: str = "http://127.0.0.1:8899",
     ):
-        self.w3 = Web3(Web3.HTTPProvider(rpc_url))
+        self.w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 30}))
         self.evm_fetcher = EVMFetcher(self.w3)
         self.solana_fetcher = SolanaFetcher(SolanaClient(solana_rpc_url))
         self.flow_tracer = FundFlowTracer(self.evm_fetcher, max_depth=2)
