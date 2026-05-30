@@ -13,21 +13,26 @@ export async function GET() {
       );
     }
 
-    const [name, issuer, assetType, maxSupplyBig] = await contract.getAssetInfo();
-    const totalSupplyBig = await contract.totalSupply();
-    const maxSupply = Number(maxSupplyBig) / 1e18;
-    const totalSupply = Number(totalSupplyBig) / 1e18;
+    const [
+      name, issuer, assetType, maxSupply, totalSupply,
+    ] = await Promise.all([
+      contract.assetName(),
+      contract.issuer(),
+      contract.assetType(),
+      contract.maxSupply(),
+      contract.totalSupply(),
+    ]);
 
     return NextResponse.json({
       name,
       issuer,
       assetType,
-      maxSupply,
-      totalSupply,
+      maxSupply: Number(maxSupply) / 1e18,
+      totalSupply: Number(totalSupply) / 1e18,
       contractAddress: address,
     });
-  } catch (err) {
-    const msg = String(err);
+  } catch (err: any) {
+    const msg = String(err?.message || err);
     if (msg.includes("call revert") || msg.includes("could not decode")) {
       return NextResponse.json(
         { error: "Contract not found on this network", code: "NO_CONTRACT" },
