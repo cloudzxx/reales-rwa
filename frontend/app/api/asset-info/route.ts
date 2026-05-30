@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getReadContract } from "@/lib/contract";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const contract = getReadContract();
